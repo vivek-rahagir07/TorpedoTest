@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         questions.push({
           q:        currentQ,
           opts:     currentOpts,
-          ans:      currentAns >= 0 ? currentAns : 0,
+          ans:      currentAns >= 0 ? currentAns : -1,
           accepted: true
         });
       }
@@ -297,10 +297,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const ansM = part.match(/(?:Correct\s+Answer|Answer)\s*[:\-]?\s*\(?([A-Da-d])\b/i);
-      const ansIndex = ansM ? 'abcd'.indexOf(ansM[1].toLowerCase()) : 0;
+      const ansIndex = ansM ? 'abcd'.indexOf(ansM[1].toLowerCase()) : -1;
 
       if (qText && opts.length >= 2) {
-        questions.push({ q: qText, opts, ans: ansIndex >= 0 ? ansIndex : 0, accepted: true });
+        questions.push({ q: qText, opts, ans: ansIndex >= 0 ? ansIndex : -1, accepted: true });
       }
     }
     return questions;
@@ -319,14 +319,18 @@ document.addEventListener('DOMContentLoaded', () => {
       div.className = 'mcq-item animate-fade-in';
       div.style.animationDelay = `${index * 0.06}s`;
 
+      // If no valid answer was parsed, default to -1 (unselected)
+      if (item.ans === undefined) item.ans = -1;
+
       let optsHtml = item.opts.map((opt, i) => `
-        <li class="${i === item.ans ? 'correct-option' : ''}" data-label="${labels[i]}">
+        <li class="mcq-opt ${i === item.ans ? 'correct-option' : ''}" data-index="${i}" data-label="${labels[i]}" title="Click to mark as correct answer">
           ${opt}
         </li>`).join('');
 
       div.innerHTML = `
         <div class="mcq-content">
           <h4>Q${index + 1}. ${item.q}</h4>
+          ${item.ans === -1 ? '<p style="color:var(--danger); font-size:0.8rem; margin-bottom:0.5rem; font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Please select the correct answer below</p>' : ''}
           <ul class="mcq-options">${optsHtml}</ul>
         </div>
         <div class="mcq-actions">
@@ -341,7 +345,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
       questionsList.appendChild(div);
 
-      // ---- FIX: Wire up buttons AFTER appending to DOM ----
+      // ---- Wire up Options ----
+      const optEls = div.querySelectorAll('.mcq-opt');
+      optEls.forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Remove correct class from all
+          optEls.forEach(o => o.classList.remove('correct-option'));
+          // Add to clicked
+          el.classList.add('correct-option');
+          item.ans = parseInt(el.getAttribute('data-index'), 10);
+          
+          // Remove the warning message if it exists
+          const warningMsg = div.querySelector('.mcq-content p');
+          if (warningMsg) warningMsg.remove();
+        });
+      });
+
+      // ---- Wire up buttons AFTER appending to DOM ----
       const acceptBtn = div.querySelector('.btn-accept');
       const rejectBtn = div.querySelector('.btn-reject');
 
@@ -398,6 +419,13 @@ document.addEventListener('DOMContentLoaded', () => {
         window.Toast.show('Accept at least one question first.', 'error');
         return;
       }
+      
+      const unselected = accepted.filter(q => q.ans === -1);
+      if (unselected.length > 0) {
+        window.Toast.show('Please select a correct answer for all accepted questions.', 'error');
+        return;
+      }
+      
       const title = document.getElementById('mcq-title').value.trim() || 'MCQ Assessment';
       const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
       // Get the saved assessment to show its invite code
