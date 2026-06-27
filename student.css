@@ -344,7 +344,7 @@
   max-width: 500px;
   text-align: center;
   box-shadow: 0 20px 60px rgba(239,68,68,0.3);
-  animation: fadeInUp 0.4s ease-out;
+  animation: modal-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .warning-icon {
@@ -743,3 +743,21 @@
 
 
 
+
+/* =======================================================
+   CODEMIRROR OVERRIDES
+======================================================= */
+.CodeMirror {
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--glass-bg-strong) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.95rem !important;
+  height: 300px !important;
+  padding: 0.5rem 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.CodeMirror-gutters {
+  background: var(--glass-bg) !important;
+  border-right: 1px solid var(--glass-border) !important;
+}

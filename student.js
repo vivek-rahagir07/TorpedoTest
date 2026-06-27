@@ -468,6 +468,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dynamicQContent.innerHTML = html;
     if (currentAssessment.type === 'coding') {
+      const editorEl = document.getElementById('code-ans-input');
+      if (window.CodeMirror) {
+        window.codeMirrorInstance = CodeMirror.fromTextArea(editorEl, {
+          mode: "javascript",
+          theme: "dracula",
+          lineNumbers: true,
+          indentUnit: 2,
+          tabSize: 2
+        });
+        window.codeMirrorInstance.setSize("100%", "300px");
+        // add some inline CSS to fix border radius
+        window.codeMirrorInstance.getWrapperElement().style.borderRadius = "var(--radius-md)";
+        window.codeMirrorInstance.getWrapperElement().style.fontFamily = "'JetBrains Mono', monospace";
+        window.codeMirrorInstance.getWrapperElement().style.fontSize = "0.95rem";
+      }
       document.getElementById('run-code-btn').addEventListener('click', runCodingSandbox);
     }
     if (currentAssessment.type === 'mcq' && studentAnswers[index] !== undefined) {
@@ -478,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function runCodingSandbox() {
+    if (window.codeMirrorInstance) window.codeMirrorInstance.save();
     const code = document.getElementById('code-ans-input').value;
     const input = document.getElementById('sample-input-code').textContent;
     const expected = document.getElementById('expected-output-code').textContent.trim();
@@ -496,8 +512,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentAssessment.type === 'mcq') {
       const s = dynamicQContent.querySelector('input[type="radio"]:checked');
       if (s) studentAnswers[currentQIndex] = parseInt(s.value);
+    } else if (currentAssessment.type === 'coding') {
+      if (window.codeMirrorInstance) window.codeMirrorInstance.save();
+      const input = document.getElementById('code-ans-input');
+      if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
     } else {
-      const input = document.getElementById(currentAssessment.type === 'case' ? 'case-ans-input' : 'code-ans-input');
+      const input = document.getElementById('case-ans-input');
       if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
     }
   }
