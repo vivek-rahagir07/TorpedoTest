@@ -27,7 +27,16 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('torpedo_theme', next ? 'dark' : 'light');
     });
   }
+
+  // ---- Navbar scroll-shadow effect ----
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 10);
+    }, { passive: true });
+  }
 });
+
 
 // ---- Assessment Database (LocalStorage) ----
 window.DB = {

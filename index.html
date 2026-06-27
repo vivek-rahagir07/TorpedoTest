@@ -10,168 +10,319 @@
   <style>
     body { align-items: center; justify-content: center; }
 
+    /* ---- Hero ---- */
     .hero-section {
       text-align: center;
-      max-width: 860px;
+      max-width: 900px;
       width: 100%;
-      padding: 2rem;
-      animation: fadeInUp 0.6s ease-out both;
+      padding: 3rem 2rem;
+      position: relative;
+      z-index: 1;
     }
 
     .logo-badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.55rem;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 0.4rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 600;
+      padding: 0.45rem 1.2rem;
+      font-size: 0.75rem;
+      font-weight: 700;
       color: var(--accent-primary);
       margin-bottom: 2rem;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
+      animation: fadeInDown 0.6s ease-out both;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .logo-badge i {
+      animation: iconPulseGlow 3s ease-in-out infinite;
+    }
+
+    /* Animated badge dot */
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
     }
 
     .hero-title {
-      font-size: clamp(2.8rem, 6vw, 4.5rem);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1.1;
-      margin-bottom: 1rem;
-      background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 50%, var(--success) 100%);
-      background-size: 200% auto;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 40%, var(--accent-tertiary) 70%, var(--success) 100%);
+      background-size: 300% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: shimmer 4s linear infinite;
+      animation: shimmer 6s linear infinite, fadeInUp 0.7s ease-out 0.1s both;
     }
 
     .hero-subtitle {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       margin-bottom: 3.5rem;
-      max-width: 500px;
+      max-width: 540px;
       margin-left: auto;
       margin-right: auto;
+      animation: fadeInUp 0.7s ease-out 0.25s both;
     }
 
+    /* ---- Portal Cards ---- */
     .portal-cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
+      gap: 1.75rem;
+      animation: fadeInUp 0.7s ease-out 0.35s both;
     }
 
     .portal-card {
-      padding: 2.5rem;
+      padding: 2.75rem 2.25rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-decoration: none;
       color: var(--text-primary);
-      transition: var(--transition);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: hidden;
       cursor: pointer;
     }
 
+    /* Shimmer sweep on hover */
     .portal-card::before {
       content: '';
       position: absolute;
-      inset: 0;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, var(--accent-primary), transparent 60%);
-      opacity: 0;
-      transition: var(--transition);
+      top: -50%; left: -75%;
+      width: 50%; height: 200%;
+      background: linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent);
+      transform: skewX(-15deg);
+      transition: left 0.6s ease;
+      pointer-events: none;
     }
+    .portal-card:hover::before { left: 135%; }
 
-    .portal-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px var(--accent-glow); }
-    .portal-card:hover::before { opacity: 0.07; }
-    .portal-card:hover .card-icon { transform: scale(1.15); color: var(--accent-primary); }
+    /* Glow halo */
+    .portal-card::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: calc(var(--radius-lg) + 2px);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .portal-card:hover::after { opacity: 0.2; }
+
+    .portal-card:hover {
+      transform: translateY(-10px) scale(1.01);
+      box-shadow: 0 30px 80px var(--accent-glow-lg);
+    }
 
     .card-icon-wrap {
-      width: 90px; height: 90px;
-      border-radius: 24px;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      width: 96px; height: 96px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 8px 30px var(--accent-glow);
+      margin-bottom: 1.75rem;
+      box-shadow: 0 12px 40px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.12);
       position: relative; z-index: 1;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: float 5s ease-in-out infinite;
     }
 
-    .card-icon { font-size: 2.2rem; color: white; transition: var(--transition); }
+    .portal-card:hover .card-icon-wrap {
+      transform: scale(1.12) rotate(-3deg);
+      box-shadow: 0 20px 60px var(--accent-glow-lg);
+    }
 
-    .card-title { font-size: 1.6rem; margin-bottom: 0.75rem; font-weight: 700; position: relative; z-index: 1; }
-    .card-desc { color: var(--text-secondary); text-align: center; line-height: 1.6; position: relative; z-index: 1; margin-bottom: 1.5rem; }
+    .card-icon { font-size: 2.3rem; color: white; }
+
+    .card-title {
+      font-size: 1.65rem;
+      margin-bottom: 0.75rem;
+      font-weight: 800;
+      position: relative; z-index: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .card-desc {
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.65;
+      position: relative; z-index: 1;
+      margin-bottom: 2rem;
+      font-size: 0.93rem;
+    }
 
     .card-arrow {
-      display: flex; align-items: center; gap: 0.4rem;
-      font-size: 0.85rem; font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 700;
       color: var(--accent-primary);
       position: relative; z-index: 1;
-      transition: var(--transition);
+      padding: 0.5rem 1rem;
+      border-radius: 99px;
+      background: rgba(79,70,229,0.08);
+      border: 1px solid rgba(79,70,229,0.2);
+      transition: all 0.3s ease;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
     }
-    .portal-card:hover .card-arrow { gap: 0.7rem; }
+    .portal-card:hover .card-arrow {
+      background: rgba(79,70,229,0.15);
+      gap: 0.8rem;
+    }
 
     .student-card .card-icon-wrap {
-      background: linear-gradient(135deg, #10b981, #059669);
-      box-shadow: 0 8px 30px rgba(16,185,129,0.3);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 12px 40px rgba(16,185,129,0.35);
     }
+    .student-card .card-arrow {
+      color: var(--success);
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.2);
+    }
+    .student-card:hover .card-arrow { background: rgba(16,185,129,0.15); }
+    .student-card:hover { box-shadow: 0 30px 80px rgba(16,185,129,0.25); }
 
+    /* ---- Feature Pills ---- */
     .features-row {
-      display: flex; justify-content: center; gap: 2rem;
-      margin-top: 2.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 3rem;
       flex-wrap: wrap;
+      animation: fadeInUp 0.7s ease-out 0.5s both;
     }
 
     .feature-pill {
-      display: flex; align-items: center; gap: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 0.4rem 1rem;
-      font-size: 0.8rem;
-      font-weight: 500;
+      padding: 0.45rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 600;
       color: var(--text-secondary);
+      transition: var(--transition);
+      cursor: default;
     }
     .feature-pill i { color: var(--accent-primary); }
+    .feature-pill:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+      background: rgba(79,70,229,0.07);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* ---- Stats ---- */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 2.5rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+      animation: fadeInUp 0.7s ease-out 0.45s both;
+    }
+
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-size: 1.8rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.04em;
+    }
+    .stat-label { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; margin-top: 0.1rem; }
   </style>
 </head>
 <body>
 
+  <!-- Animated background -->
+  <div class="bg-canvas">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+    <div class="bg-orb bg-orb-4"></div>
+  </div>
+
   <div class="hero-section">
+    <!-- Badge -->
     <div class="logo-badge">
       <i class="fa-solid fa-shield-halved"></i>
       Torpedo SkillCheck Platform
+      <div class="live-dot"></div>
+      Live
     </div>
 
+    <!-- Title -->
     <h1 class="hero-title">Assess. Learn.<br>Succeed.</h1>
-    <p class="hero-subtitle">A professional assessment platform with real-time proctoring, MCQ parsing, case studies, and coding challenges.</p>
+    <p class="hero-subtitle">A professional assessment platform with real-time AI proctoring, PDF parsing, case studies, and live coding challenges.</p>
 
+    <!-- Cards -->
     <div class="portal-cards">
-      <a href="faculty.html" class="portal-card glass-panel animate-fade-in" style="animation-delay: 0.1s">
+      <a href="faculty.html" class="portal-card glass-panel" style="animation: fadeInUp 0.6s ease-out 0.3s both">
         <div class="card-icon-wrap">
           <i class="fa-solid fa-chalkboard-user card-icon"></i>
         </div>
         <h2 class="card-title">Faculty Portal</h2>
-        <p class="card-desc">Create MCQ, Case-Based, and Coding assessments. Upload PDFs, manage questions, and publish exams.</p>
+        <p class="card-desc">Create MCQ, Case-Based, and Coding assessments. Upload PDFs, manage questions, generate invite codes, and review proctored submissions.</p>
         <span class="card-arrow">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
       </a>
 
-      <a href="student.html" class="portal-card glass-panel student-card animate-fade-in" style="animation-delay: 0.2s">
+      <a href="student.html" class="portal-card glass-panel student-card" style="animation: fadeInUp 0.6s ease-out 0.42s both">
         <div class="card-icon-wrap">
           <i class="fa-solid fa-user-graduate card-icon"></i>
         </div>
         <h2 class="card-title">Student Portal</h2>
-        <p class="card-desc">Attempt assessments in a secure, proctored full-screen environment with anti-cheat monitoring.</p>
-        <span class="card-arrow" style="color: var(--success)">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
+        <p class="card-desc">Join with your invite code and attempt assessments in a secure, proctored full-screen environment with audio & webcam monitoring.</p>
+        <span class="card-arrow" style="color:var(--success)">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
       </a>
     </div>
 
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Assessment Types</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">5+</div>
+        <div class="stat-label">Proctor Checks</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">AI</div>
+        <div class="stat-label">PDF Parsing</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Students</div>
+      </div>
+    </div>
+
+    <!-- Feature Pills -->
     <div class="features-row">
       <div class="feature-pill"><i class="fa-solid fa-lock"></i> Anti-Cheat Proctoring</div>
-      <div class="feature-pill"><i class="fa-solid fa-file-pdf"></i> PDF Question Parsing</div>
-      <div class="feature-pill"><i class="fa-solid fa-code"></i> Coding Challenges</div>
+      <div class="feature-pill"><i class="fa-solid fa-microphone"></i> Audio Monitoring</div>
+      <div class="feature-pill"><i class="fa-solid fa-file-pdf"></i> PDF Parsing</div>
+      <div class="feature-pill"><i class="fa-solid fa-code"></i> Coding Sandbox</div>
+      <div class="feature-pill"><i class="fa-solid fa-key"></i> Invite Codes</div>
       <div class="feature-pill"><i class="fa-solid fa-moon"></i> Dark Mode</div>
     </div>
   </div>
@@ -180,6 +331,6 @@
     <i class="fa-solid fa-moon"></i>
   </button>
 
-  <script src="main.js?v=4"></script>
+  <script src="main.js?v=5"></script>
 </body>
 </html>
