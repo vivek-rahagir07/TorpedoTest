@@ -107,21 +107,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const questions = [];
     
     // Normalize spaces and newlines
-    text = text.replace(/\\s+/g, ' ');
+    text = text.replace(/\s+/g, ' ');
     
-    // Use (?:^|\\s) instead of \\b to be more robust against pdf.js spacing quirks
-    const qRegex = /(?:(?:^|\\s)Q?\\d+\\s*[\\.\\)]\\s*)(.*?)(?=(?:(?:^|\\s)Q?\\d+\\s*[\\.\\)]|$))/g;
+    // Use (?:^|\s) instead of \b to be more robust against pdf.js spacing quirks
+    const qRegex = /(?:(?:^|\s)Q?\d+\s*[\.\)]\s*)(.*?)(?=(?:(?:^|\s)Q?\d+\s*[\.\)]|$))/g;
     let match;
     
     while ((match = qRegex.exec(text)) !== null) {
       const block = match[1];
       if (block.length < 10) continue; 
       
-      const optRegex = /(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]\\s*(.*?)(?=(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]|\\b(?:Correct\\s+)?Answer:|$)/gi;
+      const optRegex = /(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]\s*(.*?)(?=(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]|\b(?:Correct\s+)?Answer:|$)/gi;
       let opts = [];
       let optMatch;
       
-      let qText = block.split(/(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]/i)[0].trim();
+      let qText = block.split(/(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]/i)[0].trim();
       
       while ((optMatch = optRegex.exec(block)) !== null) {
         const optionText = optMatch[1].trim();
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       let ansIndex = 0; 
-      const ansMatch = block.match(/(?:Correct\\s+)?Answer:\\s*([A-D]|[a-d])/i);
+      const ansMatch = block.match(/(?:Correct\s+)?Answer:\s*([A-D]|[a-d])/i);
       if (ansMatch) {
         const char = ansMatch[1].toLowerCase();
         if (char === 'a') ansIndex = 0;
