@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faculty Portal - Torpedo SkillCheck</title>
+  <link rel="stylesheet" href="global.css">
+  <link rel="stylesheet" href="faculty.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  
+  <nav class="glass-panel navbar">
+    <div class="nav-brand">
+      <i class="fa-solid fa-chalkboard-user"></i>
+      <span>Faculty Portal</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link"><i class="fa-solid fa-home"></i> Home</a>
+      <button class="theme-toggle-inline" id="theme-toggle" title="Toggle Dark Mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </nav>
+
+  <main class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar glass-panel">
+      <h3 class="sidebar-title">Create Assessment</h3>
+      <ul class="nav-menu">
+        <li class="nav-item active" data-target="mcq-section">
+          <i class="fa-solid fa-list-check"></i> MCQ Based
+        </li>
+        <li class="nav-item" data-target="case-section">
+          <i class="fa-solid fa-file-signature"></i> Case Based
+        </li>
+        <li class="nav-item" data-target="coding-section">
+          <i class="fa-solid fa-code"></i> Coding
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <section class="content-area glass-panel">
+      
+      <!-- MCQ Section -->
+      <div id="mcq-section" class="assessment-section active animate-fade-in">
+        <h2><i class="fa-solid fa-list-check"></i> MCQ Based Assessment</h2>
+        <p class="section-desc">Upload a PDF or Word document containing your multiple-choice questions. The system will extract them for review.</p>
+        
+        <div class="upload-zone" id="upload-zone">
+          <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+          <h3>Drag & Drop your document here</h3>
+          <p>or</p>
+          <input type="file" id="file-upload" accept=".pdf,.doc,.docx" hidden>
+          <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">Browse Files</button>
+        </div>
+
+        <div id="parsing-loader" class="hidden">
+          <div class="spinner"></div>
+          <p>Extracting questions using AI...</p>
+        </div>
+
+        <div id="extracted-questions" class="hidden">
+          <h3>Review Extracted Questions</h3>
+          <div class="questions-list" id="questions-list">
+            <!-- Mock questions will be appended here via JS -->
+          </div>
+          <button class="btn btn-primary publish-btn" id="publish-mcq-btn">Publish Assessment</button>
+        </div>
+      </div>
+
+      <!-- Case Based Section -->
+      <div id="case-section" class="assessment-section hidden animate-fade-in">
+        <h2><i class="fa-solid fa-file-signature"></i> Case Based Assessment</h2>
+        <p class="section-desc">Paste your case study scenario and add the corresponding questions below.</p>
+        
+        <div class="form-group">
+          <label>Case Study Title</label>
+          <input type="text" id="case-title" class="form-control" placeholder="e.g. Marketing Strategy for Startup X">
+        </div>
+
+        <div class="form-group">
+          <label>Case Study Content</label>
+          <textarea id="case-content" class="form-control" rows="6" placeholder="Paste your comprehensive case study here..."></textarea>
+        </div>
+
+        <div class="questions-builder" id="case-questions-container">
+          <h3>Questions</h3>
+          <div class="question-card glass-panel">
+            <div class="form-group">
+              <label>Question 1</label>
+              <input type="text" class="form-control" placeholder="Enter question">
+            </div>
+            <div class="form-group">
+              <label>Expected Answer (Keywords/Rubric)</label>
+              <textarea class="form-control" rows="2" placeholder="Keywords to look for in student's answer..."></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button class="btn btn-outline" id="add-case-q-btn"><i class="fa-solid fa-plus"></i> Add Question</button>
+          <button class="btn btn-primary publish-btn" id="publish-case-btn">Publish Assessment</button>
+        </div>
+      </div>
+
+      <!-- Coding Section -->
+      <div id="coding-section" class="assessment-section hidden animate-fade-in">
+        <h2><i class="fa-solid fa-code"></i> Coding Assessment</h2>
+        <p class="section-desc">Add coding problems with inputs, constraints, and expected outputs.</p>
+
+        <div class="questions-builder" id="coding-questions-container">
+          <div class="question-card glass-panel">
+            <div class="form-group">
+              <label>Problem Title</label>
+              <input type="text" class="form-control" placeholder="e.g. Two Sum">
+            </div>
+            <div class="form-group">
+              <label>Problem Statement</label>
+              <textarea class="form-control" rows="4" placeholder="Describe the problem, constraints, etc."></textarea>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Sample Input</label>
+                <textarea class="form-control code-font" rows="3" placeholder="nums = [2,7,11,15], target = 9"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Expected Output</label>
+                <textarea class="form-control code-font" rows="3" placeholder="[0,1]"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-outline" id="add-coding-q-btn"><i class="fa-solid fa-plus"></i> Add Problem</button>
+          <button class="btn btn-primary publish-btn" id="publish-coding-btn">Publish Assessment</button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="main.js"></script>
+  <script src="faculty.js"></script>
+</body>
+</html>

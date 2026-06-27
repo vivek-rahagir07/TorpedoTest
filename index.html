@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torpedo SkillCheck Portal</title>
+  <link rel="stylesheet" href="global.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .portal-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Dynamic animated background bubbles */
+    .bg-bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-primary), var(--success));
+      opacity: 0.1;
+      filter: blur(40px);
+      z-index: 0;
+    }
+    
+    .bubble-1 {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      left: -100px;
+      animation: float 8s ease-in-out infinite;
+    }
+    
+    .bubble-2 {
+      width: 500px;
+      height: 500px;
+      bottom: -150px;
+      right: -100px;
+      background: linear-gradient(135deg, var(--warning), var(--danger));
+      animation: float 12s ease-in-out infinite reverse;
+    }
+    
+    @keyframes float {
+      0% { transform: translate(0, 0); }
+      50% { transform: translate(30px, 20px); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .portal-card {
+      z-index: 1;
+      max-width: 800px;
+      width: 100%;
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .portal-title {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .portal-subtitle {
+      font-size: 1.2rem;
+      margin-bottom: 4rem;
+    }
+
+    .cards-wrapper {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .role-card {
+      padding: 3rem 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-primary);
+      transition: var(--transition);
+    }
+
+    .role-card:hover {
+      transform: translateY(-10px);
+      border-color: var(--accent-primary);
+    }
+
+    .role-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      color: var(--accent-primary);
+    }
+
+    .role-title {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="portal-container">
+    <div class="bg-bubble bubble-1"></div>
+    <div class="bg-bubble bubble-2"></div>
+
+    <div class="portal-card glass-panel animate-fade-in">
+      <h1 class="portal-title">Torpedo SkillCheck</h1>
+      <p class="portal-subtitle">Advanced Assessment & Proctoring Platform</p>
+
+      <div class="cards-wrapper">
+        <a href="student.html" class="role-card glass-panel">
+          <i class="fa-solid fa-user-graduate role-icon"></i>
+          <h2 class="role-title">Student Portal</h2>
+          <p>Take your assessments in a secure, proctored environment.</p>
+        </a>
+
+        <a href="faculty.html" class="role-card glass-panel">
+          <i class="fa-solid fa-chalkboard-user role-icon"></i>
+          <h2 class="role-title">Faculty Portal</h2>
+          <p>Create and manage MCQ, Case-Based, and Coding assessments.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <button class="theme-toggle" id="theme-toggle" title="Toggle Dark Mode">
+    <i class="fa-solid fa-moon"></i>
+  </button>
+
+  <script src="main.js"></script>
+</body>
+</html>
