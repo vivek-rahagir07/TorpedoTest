@@ -74,10 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           const pageText = textContent.items.map(item => item.str).join(' ');
-          fullText += pageText + "\\n";
+        fullText += pageText + "\\n";
         }
 
+        console.log("--- PDF EXTRACTED TEXT ---");
+        console.log(fullText);
+        console.log("--------------------------");
+
         const parsedQuestions = parseQuestionsFromText(fullText);
+        console.log("Parsed Questions:", parsedQuestions);
         
         loader.classList.add('hidden');
         if (parsedQuestions.length > 0) {
