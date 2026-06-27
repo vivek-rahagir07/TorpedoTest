@@ -55,6 +55,28 @@ window.DB = {
 
   clearAll() {
     localStorage.removeItem(this._KEY);
+  },
+
+  // ---- Submissions DB Methods ----
+  _SUB_KEY: 'torpedo_submissions',
+
+  getSubmissions() {
+    try {
+      return JSON.parse(localStorage.getItem(this._SUB_KEY) || '[]');
+    } catch { return []; }
+  },
+
+  saveSubmission(submission) {
+    const data = this.getSubmissions();
+    submission.id = 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    submission.submittedAt = new Date().toISOString();
+    data.push(submission);
+    localStorage.setItem(this._SUB_KEY, JSON.stringify(data));
+    return submission.id;
+  },
+
+  clearSubmissions() {
+    localStorage.removeItem(this._SUB_KEY);
   }
 };
 

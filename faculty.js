@@ -533,4 +533,69 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // =====================================================
+  // 5. SUBMISSION LOGS DASHBOARD
+  // =====================================================
+  const logsTableBody = document.getElementById('logs-table-body');
+  const statsTotal    = document.getElementById('stats-total');
+  const statsFlagged  = document.getElementById('stats-flagged');
+  const clearLogsBtn  = document.getElementById('clear-logs-btn');
+  const navLogs       = document.getElementById('nav-logs');
+
+  function loadSubmissionLogs() {
+    if (!logsTableBody) return;
+    const submissions = window.DB ? window.DB.getSubmissions() : [];
+    logsTableBody.innerHTML = '';
+
+    statsTotal.textContent = submissions.length;
+    const flaggedCount = submissions.filter(s => s.violations && s.violations.length > 0).length;
+    statsFlagged.textContent = flaggedCount;
+
+    if (submissions.length === 0) {
+      logsTableBody.innerHTML = `<tr><td colspan="5" class="text-center" style="color:var(--text-secondary); padding:2rem;">No submissions recorded yet.</td></tr>`;
+      return;
+    }
+
+    submissions.forEach(sub => {
+      const tr = document.createElement('tr');
+      
+      let flagStatusHtml = '';
+      if (sub.violations && sub.violations.length > 0) {
+        flagStatusHtml = `<span class="violation-tag"><i class="fa-solid fa-triangle-exclamation"></i> Flagged (${sub.violations.length})</span>`;
+      } else {
+        flagStatusHtml = `<span class="violation-tag-clean"><i class="fa-solid fa-circle-check"></i> Clean</span>`;
+      }
+
+      let timelineHtml = 'No violations.';
+      if (sub.violations && sub.violations.length > 0) {
+        timelineHtml = sub.violations.map(v => `<div style="font-size:0.8rem; color:var(--danger); margin-bottom:0.25rem;"><i class="fa-solid fa-circle-exclamation"></i> ${v}</div>`).join('');
+      }
+
+      tr.innerHTML = `
+        <td><strong>${sub.studentName || 'Student'}</strong></td>
+        <td>${sub.assessmentTitle || 'Untitled Assessment'}</td>
+        <td><strong style="color:var(--accent-primary)">${sub.score || 'N/A'}</strong></td>
+        <td>${flagStatusHtml}</td>
+        <td>${timelineHtml}</td>
+      `;
+      logsTableBody.appendChild(tr);
+    });
+  }
+
+  if (navLogs) {
+    navLogs.addEventListener('click', loadSubmissionLogs);
+  }
+
+  if (clearLogsBtn) {
+    clearLogsBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all student submission logs? This cannot be undone.')) {
+        if (window.DB) {
+          window.DB.clearSubmissions();
+          loadSubmissionLogs();
+          window.Toast.show('All submission logs cleared successfully!');
+        }
+      }
+    });
+  }
+
 });

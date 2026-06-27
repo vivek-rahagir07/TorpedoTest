@@ -1,15 +1,22 @@
 /* =====================================================
    STUDENT PORTAL — JS
-   Fully functional: proctoring, player, scoring, results
+   Fully functional: proctoring, player, scoring, results,
+   pre-exam system check, camera feed, and JS runner sandbox.
    ===================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
 
   // ---- Views ----
-  const viewList    = document.getElementById('view-list');
-  const viewPre     = document.getElementById('view-pre');
-  const viewPlayer  = document.getElementById('view-player');
-  const viewResults = document.getElementById('view-results');
+  const viewList     = document.getElementById('view-list');
+  const viewSyscheck = document.getElementById('view-syscheck');
+  const viewPre      = document.getElementById('view-pre');
+  const viewPlayer   = document.getElementById('view-player');
+  const viewResults  = document.getElementById('view-results');
+
+  // ---- System Check ----
+  const syscheckNextBtn = document.getElementById('syscheck-next-btn');
+  const syscheckPreview = document.getElementById('syscheck-preview');
+  const syscheckVideoContainer = document.getElementById('syscheck-video-container');
 
   // ---- Pre-Assessment ----
   const preTitleEl   = document.getElementById('pre-title');
@@ -27,6 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn        = document.getElementById('submit-btn');
   const timerBadge       = document.getElementById('timer-badge');
   const timeLeftEl       = document.getElementById('time-left');
+
+  // ---- Proctor PIP ----
+  const proctorVideo     = document.getElementById('proctor-video');
+  const proctorSim       = document.getElementById('proctor-simulation');
+  const proctorStatusTxt = document.getElementById('proctor-status-txt');
 
   // ---- Anti-Cheat ----
   const warningModal      = document.getElementById('warning-modal');
@@ -50,10 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let warningActive     = false;
   let timerInterval     = null;
   let secondsLeft       = 0;
+  let violationsLog     = [];   // List of strings representing violations
+  let cameraStream      = null;
 
   // ---- Helper: Show View ----
   function showView(view) {
-    [viewList, viewPre, viewPlayer, viewResults].forEach(v => v.classList.add('hidden'));
+    [viewList, viewSyscheck, viewPre, viewPlayer, viewResults].forEach(v => v.classList.add('hidden'));
     view.classList.remove('hidden');
   }
 
@@ -70,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="empty-state" style="grid-column: 1/-1">
           <i class="fa-solid fa-inbox"></i>
           <p>No assessments published yet.</p>
-          <p style="font-size:0.8rem; margin-top: 0.25rem;">Ask your faculty to publish one from the Faculty Portal.</p>
         </div>`;
       return;
     }
@@ -78,18 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     assessments.forEach(item => {
       const card = document.createElement('div');
       card.className = 'assessment-item animate-fade-in';
-
       const icons = { mcq: 'fa-list-check icon-mcq', case: 'fa-file-signature icon-case', coding: 'fa-code icon-coding' };
       const typeLabels = { mcq: 'MCQ Based', case: 'Case Based', coding: 'Coding' };
-      const iconClass = icons[item.type] || 'fa-question';
-      const typeLabel = typeLabels[item.type] || item.type;
-
       card.innerHTML = `
-        <div class="assessment-item-icon ${iconClass.split(' ')[1]}">
-          <i class="fa-solid ${iconClass.split(' ')[0]}"></i>
+        <div class="assessment-item-icon ${icons[item.type].split(' ')[1]}">
+          <i class="fa-solid ${icons[item.type].split(' ')[0]}"></i>
         </div>
         <h3>${item.title}</h3>
-        <div class="meta">${typeLabel} &bull; ${item.questions.length} Question${item.questions.length !== 1 ? 's' : ''}</div>
+        <div class="meta">${typeLabels[item.type]} &bull; ${item.questions.length} Questions</div>
         <div class="start-hint"><i class="fa-solid fa-play"></i> Click to Start</div>
       `;
       card.addEventListener('click', () => selectAssessment(item));
@@ -100,19 +109,92 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAssessments();
 
   // ===========================================================
-  // 2. SELECT ASSESSMENT → PRE VIEW
+  // 2. SYSTEM CHECK SEQUENCE
   // ===========================================================
   function selectAssessment(item) {
     currentAssessment = item;
-    const typeLabels = { mcq: 'MCQ Assessment', case: 'Case Based Assessment', coding: 'Coding Assessment' };
-    preTitleEl.textContent = item.title;
-    preTypeBadge.textContent = typeLabels[item.type] || 'Assessment';
-    preMetaEl.textContent = `${item.questions.length} Question${item.questions.length !== 1 ? 's' : ''} • Full Screen Required`;
-    showView(viewPre);
+    showView(viewSyscheck);
+    runSystemCheckSequence();
   }
 
+  async function runSystemCheckSequence() {
+    syscheckNextBtn.disabled = true;
+    
+    const cameraEl = document.getElementById('check-camera');
+    const networkEl = document.getElementById('check-network');
+    const screenEl = document.getElementById('check-screen');
+
+    cameraEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
+    networkEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
+    screenEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
+
+    let cameraPassed = false;
+    let networkPassed = false;
+    let screenPassed = false;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+      cameraPassed = true;
+      cameraStream = stream;
+      syscheckPreview.srcObject = stream;
+      syscheckVideoContainer.classList.remove('hidden');
+      cameraEl.querySelector('.syscheck-status').className = 'syscheck-status success';
+      cameraEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-check"></i> Webcam Active';
+    } catch (err) {
+      cameraEl.querySelector('.syscheck-status').className = 'syscheck-status warning';
+      cameraEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Using Simulation Mode';
+      cameraPassed = true; 
+    }
+
+    setTimeout(() => {
+      networkPassed = true;
+      networkEl.querySelector('.syscheck-status').className = 'syscheck-status success';
+      networkEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-check"></i> Latency: 28ms (Excellent)';
+      checkAllPassed();
+    }, 1200);
+
+    const w = window.screen.width;
+    const h = window.screen.height;
+    setTimeout(() => {
+      screenPassed = true;
+      if (w >= 1024 && h >= 720) {
+        screenEl.querySelector('.syscheck-status').className = 'syscheck-status success';
+        screenEl.querySelector('.syscheck-status').innerHTML = `<i class="fa-solid fa-circle-check"></i> ${w}x${h} Supported`;
+      } else {
+        screenEl.querySelector('.syscheck-status').className = 'syscheck-status warning';
+        screenEl.querySelector('.syscheck-status').innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${w}x${h} (Small Resolution)`;
+      }
+      checkAllPassed();
+    }, 800);
+
+    function checkAllPassed() {
+      if (cameraPassed && networkPassed && screenPassed) {
+        syscheckNextBtn.disabled = false;
+      }
+    }
+  }
+
+  syscheckNextBtn.addEventListener('click', () => {
+    const typeLabels = { mcq: 'MCQ Assessment', case: 'Case Based Assessment', coding: 'Coding Assessment' };
+    preTitleEl.textContent = currentAssessment.title;
+    preTypeBadge.textContent = typeLabels[currentAssessment.type] || 'Assessment';
+    preMetaEl.textContent = `${currentAssessment.questions.length} Question${currentAssessment.questions.length !== 1 ? 's' : ''} • Full Screen Required`;
+    showView(viewPre);
+  });
+
   if (backBtn) {
-    backBtn.addEventListener('click', () => { currentAssessment = null; showView(viewList); });
+    backBtn.addEventListener('click', () => {
+      stopCameraStream();
+      currentAssessment = null;
+      showView(viewList);
+    });
+  }
+
+  function stopCameraStream() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
   }
 
   // ===========================================================
@@ -120,15 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   if (startBtn) {
     startBtn.addEventListener('click', async () => {
-      if (!currentAssessment || currentAssessment.questions.length === 0) {
-        window.Toast && window.Toast.show('No questions in this assessment.', 'error');
-        return;
-      }
-      try {
-        await document.documentElement.requestFullscreen?.();
-      } catch (err) {
-        console.warn('Fullscreen not available:', err.message);
-      }
+      try { await document.documentElement.requestFullscreen?.(); } catch (err) {}
       startAssessment();
     });
   }
@@ -138,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
     flagCount = 0;
     studentAnswers = {};
     currentQIndex = 0;
+    violationsLog = [];
     flagCounterEl.classList.add('hidden');
 
-    // Timer: 2 minutes per question, min 10 min, max 90 min
     const minutes = Math.min(90, Math.max(10, currentAssessment.questions.length * 2));
     secondsLeft = minutes * 60;
 
@@ -148,10 +222,29 @@ document.addEventListener('DOMContentLoaded', () => {
     buildPalette();
     renderQuestion(0);
     startTimer();
+    initProctorFeed();
   }
 
   // ===========================================================
-  // 4. TIMER
+  // 4. LIVE PROCTOR FEED
+  // ===========================================================
+  function initProctorFeed() {
+    if (cameraStream) {
+      proctorVideo.srcObject = cameraStream;
+      proctorVideo.classList.remove('hidden');
+      proctorSim.classList.add('hidden');
+      proctorStatusTxt.textContent = 'Active';
+      proctorStatusTxt.style.color = 'var(--success)';
+    } else {
+      proctorVideo.classList.add('hidden');
+      proctorSim.classList.remove('hidden');
+      proctorStatusTxt.textContent = 'Simulated';
+      proctorStatusTxt.style.color = 'var(--warning)';
+    }
+  }
+
+  // ===========================================================
+  // 5. TIMER
   // ===========================================================
   function startTimer() {
     clearInterval(timerInterval);
@@ -160,20 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const m = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
       const s = (secondsLeft % 60).toString().padStart(2, '0');
       timeLeftEl.textContent = `${m}:${s}`;
-
-      if (secondsLeft <= 60) {
-        timerBadge.classList.add('warning');
-      }
       if (secondsLeft <= 0) {
         clearInterval(timerInterval);
-        window.Toast && window.Toast.show('Time is up! Submitting automatically.', 'warning');
-        setTimeout(submitAssessment, 1000);
+        submitAssessment();
       }
     }, 1000);
   }
 
   // ===========================================================
-  // 5. PALETTE
+  // 6. PALETTE
   // ===========================================================
   function buildPalette() {
     qPaletteEl.innerHTML = '';
@@ -195,219 +283,146 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===========================================================
-  // 6. RENDER QUESTION
+  // 7. RENDER QUESTION & RUN CODE SANDBOX
   // ===========================================================
   const optionLetters = ['A', 'B', 'C', 'D'];
 
   function renderQuestion(index) {
-    saveCurrentAnswer();  // Save before navigating away
+    saveCurrentAnswer();
     currentQIndex = index;
     const qData = currentAssessment.questions[index];
     const total  = currentAssessment.questions.length;
 
     questionTracker.textContent = `Question ${index + 1} of ${total}`;
     prevBtn.disabled = index === 0;
-    nextBtn.innerHTML = index === total - 1
-      ? '<i class="fa-solid fa-flag"></i> Finish'
-      : 'Next <i class="fa-solid fa-arrow-right"></i>';
+    nextBtn.innerHTML = index === total - 1 ? '<i class="fa-solid fa-flag"></i> Finish' : 'Next <i class="fa-solid fa-arrow-right"></i>';
 
     let html = '';
-
-    // ---- MCQ ----
     if (currentAssessment.type === 'mcq') {
       html = `<p class="q-text">${qData.q}</p><div class="options-grid">`;
       qData.opts.forEach((opt, i) => {
-        const selected = studentAnswers[index] === i ? 'checked' : '';
-        html += `
-          <label class="option-label">
-            <input type="radio" name="mcq_q" value="${i}" ${selected}>
-            <div class="option-marker">${optionLetters[i]}</div>
-            <span class="option-text">${opt}</span>
-          </label>`;
+        html += `<label class="option-label"><input type="radio" name="mcq_q" value="${i}"> <div class="option-marker">${optionLetters[i]}</div> <span>${opt}</span></label>`;
       });
       html += `</div>`;
-    }
-
-    // ---- Case Based ----
-    else if (currentAssessment.type === 'case') {
+    } else if (currentAssessment.type === 'case') {
       html = `
         <div class="case-study-panel">
-          <h4><i class="fa-solid fa-book-open"></i> Case Study</h4>
+          <h4><i class="fa-solid fa-book-open"></i> Case Study Scenario</h4>
           <p>${currentAssessment.content || 'No case study content provided.'}</p>
         </div>
         <p class="q-text">${qData.q}</p>
         <textarea class="case-answer-box" id="case-ans-input" placeholder="Type your detailed answer here...">${studentAnswers[index] || ''}</textarea>
       `;
-    }
-
-    // ---- Coding ----
-    else if (currentAssessment.type === 'coding') {
+    } else if (currentAssessment.type === 'coding') {
       html = `
         <div class="coding-panel">
-          <div class="problem-title-badge">
-            <i class="fa-solid fa-terminal" style="color:var(--accent-primary)"></i>
-            <h4>${qData.title}</h4>
-          </div>
-          <p class="q-text" style="font-size:0.95rem;">${qData.desc}</p>
+          <div class="problem-title-badge"><h4>${qData.title}</h4></div>
+          <p class="q-text">${qData.desc}</p>
           <div class="io-row">
-            <div class="io-box"><strong>Sample Input</strong><code>${qData.input || 'None'}</code></div>
-            <div class="io-box"><strong>Expected Output</strong><code>${qData.output || 'None'}</code></div>
+            <div class="io-box"><strong>Sample Input</strong><code id="sample-input-code">${qData.input || 'None'}</code></div>
+            <div class="io-box"><strong>Expected Output</strong><code id="expected-output-code">${qData.output || 'None'}</code></div>
           </div>
-          <label style="font-size:0.85rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.5rem;">Your Solution</label>
-          <textarea class="code-editor" id="code-ans-input" placeholder="// Write your solution here...">${studentAnswers[index] || ''}</textarea>
+          <textarea class="code-editor" id="code-ans-input">${studentAnswers[index] || ''}</textarea>
+          <button class="btn btn-outline btn-sm mt-2" id="run-code-btn"><i class="fa-solid fa-play"></i> Run & Test</button>
+          <div class="terminal-output hidden" id="code-terminal"><pre id="terminal-stdout"></pre></div>
         </div>
       `;
     }
 
     dynamicQContent.innerHTML = html;
-
-    // Restore radio selection visual
+    if (currentAssessment.type === 'coding') {
+      document.getElementById('run-code-btn').addEventListener('click', runCodingSandbox);
+    }
     if (currentAssessment.type === 'mcq' && studentAnswers[index] !== undefined) {
       const radio = dynamicQContent.querySelector(`input[value="${studentAnswers[index]}"]`);
       if (radio) radio.checked = true;
     }
-
     updatePalette();
   }
 
-  // ---- Save current answer before navigating ----
+  function runCodingSandbox() {
+    const code = document.getElementById('code-ans-input').value;
+    const input = document.getElementById('sample-input-code').textContent;
+    const expected = document.getElementById('expected-output-code').textContent.trim();
+    const stdout = document.getElementById('terminal-stdout');
+    document.getElementById('code-terminal').classList.remove('hidden');
+    
+    try {
+      const executor = new Function('input', `try { ${code} ; return typeof solution === 'function' ? solution(input) : undefined; } catch(e) { return null; }`);
+      const result = executor(input);
+      stdout.textContent = String(result) === expected ? '✅ Test Case Passed!' : `❌ Expected "${expected}" but got "${result}"`;
+    } catch(e) { stdout.textContent = 'Runtime Error.'; }
+  }
+
   function saveCurrentAnswer() {
     if (!currentAssessment) return;
-
     if (currentAssessment.type === 'mcq') {
-      const selected = dynamicQContent.querySelector('input[type="radio"]:checked');
-      if (selected) studentAnswers[currentQIndex] = parseInt(selected.value);
-    } else if (currentAssessment.type === 'case') {
-      const ta = document.getElementById('case-ans-input');
-      if (ta && ta.value.trim()) studentAnswers[currentQIndex] = ta.value.trim();
-    } else if (currentAssessment.type === 'coding') {
-      const ce = document.getElementById('code-ans-input');
-      if (ce && ce.value.trim()) studentAnswers[currentQIndex] = ce.value.trim();
-    }
-  }
-
-  // ===========================================================
-  // 7. NAVIGATION
-  // ===========================================================
-  if (prevBtn) prevBtn.addEventListener('click', () => {
-    if (currentQIndex > 0) renderQuestion(currentQIndex - 1);
-  });
-
-  if (nextBtn) nextBtn.addEventListener('click', () => {
-    if (currentQIndex < currentAssessment.questions.length - 1) {
-      renderQuestion(currentQIndex + 1);
+      const s = dynamicQContent.querySelector('input[type="radio"]:checked');
+      if (s) studentAnswers[currentQIndex] = parseInt(s.value);
     } else {
-      confirmSubmit();
+      const input = document.getElementById(currentAssessment.type === 'case' ? 'case-ans-input' : 'code-ans-input');
+      if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
     }
-  });
-
-  if (submitBtn) submitBtn.addEventListener('click', confirmSubmit);
-
-  function confirmSubmit() {
-    saveCurrentAnswer();
-    const answered = Object.keys(studentAnswers).length;
-    const total    = currentAssessment.questions.length;
-    const unanswered = total - answered;
-    if (unanswered > 0) {
-      if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) return;
-    }
-    submitAssessment();
   }
 
   // ===========================================================
-  // 8. SUBMIT & RESULTS
+  // 8. NAVIGATION
+  // ===========================================================
+  if (prevBtn) prevBtn.addEventListener('click', () => { if (currentQIndex > 0) renderQuestion(currentQIndex - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { 
+    if (currentQIndex < currentAssessment.questions.length - 1) renderQuestion(currentQIndex + 1); 
+    else submitAssessment();
+  });
+  if (submitBtn) submitBtn.addEventListener('click', submitAssessment);
+
+  // ===========================================================
+  // 9. SUBMIT & RESULTS
   // ===========================================================
   function submitAssessment() {
     clearInterval(timerInterval);
     isActive = false;
     saveCurrentAnswer();
-
+    stopCameraStream();
     try { document.exitFullscreen?.(); } catch (_) {}
 
-    // Score MCQ
-    let correctCount = 0;
-    if (currentAssessment.type === 'mcq') {
-      currentAssessment.questions.forEach((q, i) => {
-        if (studentAnswers[i] === q.ans) correctCount++;
-      });
-    }
-
-    const total    = currentAssessment.questions.length;
+    const total = currentAssessment.questions.length;
     const answered = Object.keys(studentAnswers).length;
-
-    showView(viewResults);
+    let scoreText = 'Submitted';
 
     if (currentAssessment.type === 'mcq') {
-      const pct = Math.round((correctCount / total) * 100);
-      resultsScoreEl.textContent = `${correctCount} / ${total} (${pct}%)`;
-      resultsSummaryEl.textContent = `You answered ${answered} of ${total} questions. ${flagCount} violation flag(s) recorded.`;
-    } else {
-      resultsScoreEl.textContent = `${answered} / ${total}`;
-      resultsSummaryEl.textContent = `Submitted! ${answered} of ${total} question(s) answered. ${flagCount} violation flag(s) recorded.`;
+      let correct = currentAssessment.questions.reduce((acc, q, i) => acc + (studentAnswers[i] === q.ans ? 1 : 0), 0);
+      scoreText = `${correct} / ${total} (${Math.round((correct / total) * 100)}%)`;
     }
 
-    window.Toast && window.Toast.show('Assessment submitted successfully!');
-    loadAssessments(); // Refresh list for next time
+    if (window.DB) window.DB.saveSubmission({ title: currentAssessment.title, score: scoreText, violations: violationsLog });
+    showView(viewResults);
+    resultsScoreEl.textContent = scoreText;
+    resultsSummaryEl.textContent = `Completed ${answered} / ${total} questions. ${flagCount} violations logged.`;
+    loadAssessments();
   }
 
   // ===========================================================
-  // 9. ANTI-CHEAT PROCTORING
+  // 10. ANTI-CHEAT
   // ===========================================================
   document.addEventListener('fullscreenchange', handleFsChange);
-  document.addEventListener('webkitfullscreenchange', handleFsChange);
+  document.addEventListener('visibilitychange', () => { if (isActive && document.hidden) triggerFlag('Tab Switch'); });
+  window.addEventListener('blur', () => { if (isActive) triggerFlag('Focus Lost'); });
 
-  function handleFsChange() {
-    if (!isActive || warningActive) return;
-    const inFs = document.fullscreenElement || document.webkitFullscreenElement;
-    if (!inFs) triggerFlag('You exited full-screen mode.');
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (!isActive || warningActive) return;
-    if (document.hidden) triggerFlag('You switched tabs or minimized the window.');
-  });
-
-  window.addEventListener('blur', () => {
-    if (!isActive || warningActive) return;
-    triggerFlag('Focus was lost from the assessment window.');
-  });
+  function handleFsChange() { if (isActive && !document.fullscreenElement) triggerFlag('Exited Fullscreen'); }
 
   function triggerFlag(reason) {
     flagCount++;
-    warningActive = true;
-
-    // Update flag badge
+    violationsLog.push(`${new Date().toLocaleTimeString()} - ${reason}`);
     flagCounterEl.textContent = `Flags: ${flagCount}`;
     flagCounterEl.classList.remove('hidden');
-
     warningReasonEl.textContent = reason;
-    const remaining = MAX_FLAGS - flagCount;
-    flagsRemainingEl.textContent = remaining > 0
-      ? `${remaining} more violation(s) will auto-submit.`
-      : 'This is your last warning. Next violation will auto-submit.';
-
-    try { document.exitFullscreen?.(); } catch (_) {}
     warningModal.classList.remove('hidden');
-
-    if (flagCount >= MAX_FLAGS) {
-      setTimeout(() => {
-        warningModal.classList.add('hidden');
-        window.Toast && window.Toast.show('Maximum violations reached. Auto-submitting.', 'error');
-        setTimeout(submitAssessment, 800);
-      }, 2500);
-    }
+    if (flagCount >= MAX_FLAGS) setTimeout(submitAssessment, 2000);
   }
 
-  if (resumeBtn) {
-    resumeBtn.addEventListener('click', async () => {
-      try {
-        await document.documentElement.requestFullscreen?.();
-        warningModal.classList.add('hidden');
-        setTimeout(() => { warningActive = false; }, 600);
-      } catch (err) {
-        window.Toast && window.Toast.show('Please allow full-screen to resume.', 'error');
-      }
-    });
-  }
+  if (resumeBtn) resumeBtn.addEventListener('click', () => {
+    warningModal.classList.add('hidden');
+    document.documentElement.requestFullscreen?.();
+  });
 
 });

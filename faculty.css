@@ -401,3 +401,93 @@
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
+
+/* ---- Logs Stats Dashboard ---- */
+.logs-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg-strong);
+}
+
+.stat-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ---- Table Container ---- */
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  margin-top: 1.5rem;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.logs-table th, .logs-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.logs-table th {
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: rgba(0,0,0,0.02);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.logs-table tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-table tbody tr:hover {
+  background: rgba(79, 70, 229, 0.02);
+}
+
+.violation-tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--danger);
+  background: var(--danger-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.violation-tag-clean {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+

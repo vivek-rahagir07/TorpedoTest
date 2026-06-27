@@ -42,6 +42,9 @@
         <li class="nav-item" data-target="coding-section">
           <i class="fa-solid fa-code"></i> Coding
         </li>
+        <li class="nav-item" data-target="logs-section" id="nav-logs">
+          <i class="fa-solid fa-chart-line"></i> Submission Logs
+        </li>
       </ul>
     </aside>
 
@@ -173,6 +176,49 @@ Correct Answer: B"></textarea>
         <div class="action-buttons">
           <button class="btn btn-outline" id="add-coding-q-btn"><i class="fa-solid fa-plus"></i> Add Problem</button>
           <button class="btn btn-primary" id="publish-coding-btn"><i class="fa-solid fa-rocket"></i> Publish Assessment</button>
+        </div>
+      </div>
+
+      <!-- =================== SUBMISSION LOGS SECTION =================== -->
+      <div id="logs-section" class="assessment-section">
+        <div class="section-header">
+          <i class="fa-solid fa-chart-line"></i>
+          <h2>Student Submission &amp; Proctoring Logs</h2>
+        </div>
+        <p class="section-desc">Review completed student assessments, check proctoring violations, and view scoring breakdowns.</p>
+
+        <div class="logs-stats mb-3">
+          <div class="stat-card glass-panel">
+            <span class="stat-title">Total Submissions</span>
+            <span class="stat-value" id="stats-total">0</span>
+          </div>
+          <div class="stat-card glass-panel">
+            <span class="stat-title">Flagged Attempts</span>
+            <span class="stat-value text-danger" id="stats-flagged">0</span>
+          </div>
+        </div>
+
+        <div class="table-container glass-panel">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Assessment Title</th>
+                <th>Score</th>
+                <th>Proctor Flags</th>
+                <th>Violations Log</th>
+              </tr>
+            </thead>
+            <tbody id="logs-table-body">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-danger btn-outline btn-sm" id="clear-logs-btn">
+            <i class="fa-solid fa-trash"></i> Clear Submission Logs
+          </button>
         </div>
       </div>
 

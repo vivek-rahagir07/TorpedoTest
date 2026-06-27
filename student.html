@@ -34,6 +34,46 @@
     </div>
   </div>
 
+  <!-- ======= VIEW 1.5: Pre-Exam System Check ======= -->
+  <div class="student-wrapper hidden" id="view-syscheck">
+    <div class="pre-card glass-panel animate-fade-in" style="max-width: 600px;">
+      <h2><i class="fa-solid fa-screwdriver-wrench" style="color:var(--accent-primary)"></i> Pre-Exam System Check</h2>
+      <p class="section-desc">We are verifying your hardware and connection parameters before starting the test.</p>
+      
+      <div class="syscheck-list">
+        <div class="syscheck-item" id="check-camera">
+          <div class="syscheck-info">
+            <i class="fa-solid fa-camera check-icon"></i>
+            <span>Webcam &amp; Feed Authorisation</span>
+          </div>
+          <span class="syscheck-status"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking...</span>
+        </div>
+        <div class="syscheck-item" id="check-network">
+          <div class="syscheck-info">
+            <i class="fa-solid fa-wifi check-icon"></i>
+            <span>Network Latency Check</span>
+          </div>
+          <span class="syscheck-status"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking...</span>
+        </div>
+        <div class="syscheck-item" id="check-screen">
+          <div class="syscheck-info">
+            <i class="fa-solid fa-display check-icon"></i>
+            <span>Resolution &amp; Geometry Test</span>
+          </div>
+          <span class="syscheck-status"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking...</span>
+        </div>
+      </div>
+
+      <div id="syscheck-video-container" class="hidden mt-3">
+        <video id="syscheck-preview" autoplay muted playsinline style="width:100%; border-radius:var(--radius-md); border:1px solid var(--glass-border); transform: scaleX(-1);"></video>
+      </div>
+
+      <button class="btn btn-primary btn-block mt-3" id="syscheck-next-btn" disabled>
+        Proceed to Instructions <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- ======= VIEW 2: Pre-Assessment Instructions ======= -->
   <div class="student-wrapper hidden" id="view-pre">
     <div class="pre-card glass-panel animate-fade-in">
@@ -89,6 +129,26 @@
 
       <!-- Palette Sidebar -->
       <div class="nav-sidebar glass-panel">
+        <!-- Live Proctoring PIP Container -->
+        <div id="proctor-feed-container" class="mb-3">
+          <div class="proctor-header">
+            <span class="rec-dot"></span>
+            <span>PROCTOR FEED (LIVE)</span>
+          </div>
+          <div class="proctor-video-wrap">
+            <video id="proctor-video" autoplay muted playsinline></video>
+            <div id="proctor-simulation" class="hidden">
+              <div class="scanner-line"></div>
+              <div class="target-box"></div>
+              <i class="fa-solid fa-face-viewfinder scan-icon"></i>
+            </div>
+          </div>
+          <div class="proctor-status">
+            <span>Status: <strong id="proctor-status-txt">Secure</strong></span>
+            <span id="proctor-detection">Target: Focused</span>
+          </div>
+        </div>
+
         <h3>Question Palette</h3>
         <div class="q-palette" id="q-palette"></div>
 
