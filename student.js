@@ -319,7 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function startAssessment() {
+  let wakeLock = null;
+
+  async function startAssessment() {
     isActive = true;
     flagCount = 0;
     studentAnswers = {};
@@ -336,6 +338,13 @@ document.addEventListener('DOMContentLoaded', () => {
     startTimer();
     initProctorFeed();
     startAudioSpikeDetector();
+
+    // Ultimate Lockdown: Prevent screen from sleeping
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    } catch (err) {}
   }
 
   // ===========================================================
@@ -433,6 +442,15 @@ document.addEventListener('DOMContentLoaded', () => {
     questionTracker.textContent = `Question ${index + 1} of ${total}`;
     prevBtn.disabled = index === 0;
     nextBtn.innerHTML = index === total - 1 ? '<i class="fa-solid fa-flag"></i> Finish' : 'Next <i class="fa-solid fa-arrow-right"></i>';
+
+    // Dispatch progress to Live Command Center
+    localStorage.setItem('torpedo_live_event', JSON.stringify({
+      type: 'progress',
+      student: studentName || 'Unknown Student',
+      message: `Navigated to Q${index + 1} of ${total}`,
+      time: new Date().toLocaleTimeString(),
+      _rand: Math.random()
+    }));
 
     let html = '';
     if (currentAssessment.type === 'mcq') {
@@ -541,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveCurrentAnswer();
     stopCameraStream();
     try { document.exitFullscreen?.(); } catch (_) {}
+    if (wakeLock) { wakeLock.release().then(() => wakeLock = null); }
 
     const total = currentAssessment.questions.length;
     const answered = Object.keys(studentAnswers).length;
@@ -594,11 +613,27 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastKeyTime = 0;
   let rapidKeyCount = 0;
   
+  // Ultimate Lockdown Mode
+  document.addEventListener('contextmenu', e => {
+    if (isActive) {
+      e.preventDefault();
+      triggerFlag('Attempted to open Context Menu (Right Click)');
+    }
+  });
+
+  // Block DevTools shortcuts
   document.addEventListener('keydown', (e) => {
     if (!isActive) return;
+    
+    // F12 or Ctrl+Shift+I / Cmd+Option+I
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.metaKey && e.altKey && e.key === 'i')) {
+      e.preventDefault();
+      triggerFlag('Attempted to open Developer Tools');
+    }
+    
     const now = Date.now();
     // Ignore non-character keys like Shift/Ctrl/Meta
-    if (e.key.length === 1) {
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
       if (now - lastKeyTime < 25) { // Unnaturally fast (less than 25ms between strokes)
         rapidKeyCount++;
         if (rapidKeyCount > 10) {
@@ -617,7 +652,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function triggerFlag(reason) {
     flagCount++;
     pendingViolationReason = reason;
-    violationsLog.push(`${new Date().toLocaleTimeString()} — ${reason}`);
+    const timeStr = new Date().toLocaleTimeString();
+    violationsLog.push(`${timeStr} — ${reason}`);
+    
+    // Dispatch to Live Command Center
+    localStorage.setItem('torpedo_live_event', JSON.stringify({
+      type: 'flag',
+      student: studentName || 'Unknown Student',
+      message: reason,
+      time: timeStr,
+      _rand: Math.random() // force event trigger
+    }));
+
     flagCounterEl.textContent = `⚑ ${flagCount} Flag${flagCount > 1 ? 's' : ''}`;
     flagCounterEl.classList.remove('hidden');
     warningReasonEl.textContent = reason;

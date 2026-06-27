@@ -710,3 +710,46 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+// =====================================================
+// 6. LIVE COMMAND CENTER (Cross-Tab Sync)
+// =====================================================
+const liveFeedList = document.getElementById('live-feed-list');
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'torpedo_live_event') {
+    if (!e.newValue) return;
+    const data = JSON.parse(e.newValue);
+    
+    // Remove empty state if present
+    const empty = liveFeedList.querySelector('.empty-state');
+    if (empty) empty.remove();
+    
+    const div = document.createElement('div');
+    div.className = `live-event ${data.type === 'progress' ? 'progress' : 'flag'}`;
+    
+    const icon = data.type === 'progress' ? '<i class="fa-solid fa-spinner fa-spin-pulse"></i>' : '<i class="fa-solid fa-triangle-exclamation"></i>';
+    
+    div.innerHTML = `
+      <div class="live-event-info">
+        <span class="live-event-time">${data.time}</span>
+        <span><strong>${data.student}</strong></span>
+        <span class="live-event-reason">${icon} ${data.message}</span>
+      </div>
+    `;
+    
+    liveFeedList.prepend(div);
+    
+    // Show toast for flags
+    if (data.type === 'flag') {
+      window.Toast.show(`ALERT: ${data.student} - ${data.message}`, 'error');
+      
+      // Flash the live section icon if not currently viewing it
+      const liveNavIcon = document.querySelector('li[data-target="live-section"] i');
+      if (liveNavIcon && document.querySelector('.assessment-section.active').id !== 'live-section') {
+        liveNavIcon.classList.add('fa-beat-fade');
+        setTimeout(() => liveNavIcon.classList.remove('fa-beat-fade'), 5000);
+      }
+    }
+  }
+});
