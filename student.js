@@ -567,11 +567,50 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===========================================================
-  // 10. ANTI-CHEAT
+  // 10. ANTI-CHEAT & ANTI-PLAGIARISM
   // ===========================================================
   document.addEventListener('fullscreenchange', handleFsChange);
   document.addEventListener('visibilitychange', () => { if (isActive && document.hidden) triggerFlag('Tab Switch'); });
   window.addEventListener('blur', () => { if (isActive) triggerFlag('Focus Lost'); });
+
+  // Anti-Copy & Anti-Paste
+  document.addEventListener('copy', (e) => {
+    if (isActive) {
+      e.preventDefault();
+      triggerFlag('Attempted to Copy content');
+      window.Toast.show('Copying is disabled during the assessment!', 'error');
+    }
+  });
+
+  document.addEventListener('paste', (e) => {
+    if (isActive) {
+      e.preventDefault();
+      triggerFlag('Attempted to Paste content');
+      window.Toast.show('Pasting is disabled during the assessment!', 'error');
+    }
+  });
+
+  // Keystroke Rhythm & Speed Tracker
+  let lastKeyTime = 0;
+  let rapidKeyCount = 0;
+  
+  document.addEventListener('keydown', (e) => {
+    if (!isActive) return;
+    const now = Date.now();
+    // Ignore non-character keys like Shift/Ctrl/Meta
+    if (e.key.length === 1) {
+      if (now - lastKeyTime < 25) { // Unnaturally fast (less than 25ms between strokes)
+        rapidKeyCount++;
+        if (rapidKeyCount > 10) {
+          triggerFlag('Suspicious Keystroke Speed Detected (Macro/Auto-typer)');
+          rapidKeyCount = 0; // reset to prevent spam
+        }
+      } else {
+        rapidKeyCount = Math.max(0, rapidKeyCount - 1);
+      }
+      lastKeyTime = now;
+    }
+  });
 
   function handleFsChange() { if (isActive && !document.fullscreenElement) triggerFlag('Exited Fullscreen'); }
 
