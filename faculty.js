@@ -6,12 +6,16 @@ document.addEventListener('DOMContentLoaded', () => {
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       navItems.forEach(nav => nav.classList.remove('active'));
-      sections.forEach(sec => sec.classList.add('hidden'));
+      sections.forEach(sec => {
+        sec.classList.remove('active');
+        sec.classList.add('hidden');
+      });
 
       item.classList.add('active');
       const targetId = item.getAttribute('data-target');
       const targetSection = document.getElementById(targetId);
       if (targetSection) {
+        targetSection.classList.add('active');
         targetSection.classList.remove('hidden');
       }
     });
@@ -51,33 +55,100 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function handleFileUpload(file) {
+    if (file.type !== 'application/pdf') {
+      window.Toast.show('Only PDF files are currently supported for parsing.', 'error');
+      return;
+    }
+
     uploadZone.classList.add('hidden');
     loader.classList.remove('hidden');
 
-    setTimeout(() => {
-      loader.classList.add('hidden');
-      renderMockQuestions();
-      extractedContainer.classList.remove('hidden');
-      window.Toast.show('Document parsed successfully!');
-    }, 2000);
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        const typedarray = new Uint8Array(this.result);
+        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+        let fullText = "";
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          fullText += pageText + "\\n";
+        }
+
+        const parsedQuestions = parseQuestionsFromText(fullText);
+        
+        loader.classList.add('hidden');
+        if (parsedQuestions.length > 0) {
+          renderParsedQuestions(parsedQuestions);
+          extractedContainer.classList.remove('hidden');
+          window.Toast.show(`Successfully extracted ${parsedQuestions.length} questions!`);
+        } else {
+          uploadZone.classList.remove('hidden');
+          window.Toast.show('Could not find any standard questions in the PDF. Please check the formatting.', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        loader.classList.add('hidden');
+        uploadZone.classList.remove('hidden');
+        window.Toast.show('Error reading PDF file.', 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
   }
 
-  function renderMockQuestions() {
-    currentMcqData = [
-      {
-        q: "What is the primary purpose of the 'const' keyword in JavaScript?",
-        opts: ["Defines a block-scoped local variable.", "Defines a constant reference to a value.", "Defines a global variable.", "None of the above."],
-        ans: 1,
-        accepted: true
-      },
-      {
-        q: "Which of the following is NOT a primitive data type in JS?",
-        opts: ["String", "Boolean", "Object", "Symbol"],
-        ans: 2,
-        accepted: true
+  function parseQuestionsFromText(text) {
+    const questions = [];
+    
+    // Normalize spaces and newlines
+    text = text.replace(/\\s+/g, ' ');
+    
+    // Use (?:^|\\s) instead of \\b to be more robust against pdf.js spacing quirks
+    const qRegex = /(?:(?:^|\\s)Q?\\d+\\s*[\\.\\)]\\s*)(.*?)(?=(?:(?:^|\\s)Q?\\d+\\s*[\\.\\)]|$))/g;
+    let match;
+    
+    while ((match = qRegex.exec(text)) !== null) {
+      const block = match[1];
+      if (block.length < 10) continue; 
+      
+      const optRegex = /(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]\\s*(.*?)(?=(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]|\\b(?:Correct\\s+)?Answer:|$)/gi;
+      let opts = [];
+      let optMatch;
+      
+      let qText = block.split(/(?:^|\\s)(?:[A-D]|[a-d])\\s*[\\.\\)]/i)[0].trim();
+      
+      while ((optMatch = optRegex.exec(block)) !== null) {
+        const optionText = optMatch[1].trim();
+        if (optionText.toLowerCase().includes('answer:')) break;
+        if (opts.length >= 4) break; // Force maximum of 4 options to prevent bleeding
+        if (optionText.length > 0) opts.push(optionText);
       }
-    ];
+      
+      let ansIndex = 0; 
+      const ansMatch = block.match(/(?:Correct\\s+)?Answer:\\s*([A-D]|[a-d])/i);
+      if (ansMatch) {
+        const char = ansMatch[1].toLowerCase();
+        if (char === 'a') ansIndex = 0;
+        else if (char === 'b') ansIndex = 1;
+        else if (char === 'c') ansIndex = 2;
+        else if (char === 'd') ansIndex = 3;
+      }
+      
+      if (qText && opts.length > 1) {
+        questions.push({
+          q: qText,
+          opts: opts,
+          ans: ansIndex,
+          accepted: true
+        });
+      }
+    }
+    return questions;
+  }
 
+  function renderParsedQuestions(parsedData) {
+    currentMcqData = parsedData;
     questionsList.innerHTML = '';
     
     currentMcqData.forEach((item, index) => {
