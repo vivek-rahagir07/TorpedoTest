@@ -33,6 +33,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const qCountEl     = document.getElementById('q-count');
   const publishMcqBtn = document.getElementById('publish-mcq-btn');
 
+  // Input Mode Toggles
+  const tabPdf = document.getElementById('tab-pdf');
+  const tabPaste = document.getElementById('tab-paste');
+  const uploadZoneWrap = document.getElementById('upload-zone-wrap');
+  const pasteZoneWrap = document.getElementById('paste-zone-wrap');
+  const pasteInput = document.getElementById('paste-input');
+  const parsePasteBtn = document.getElementById('parse-paste-btn');
+
+  tabPdf.addEventListener('click', () => {
+    tabPdf.classList.add('active');
+    tabPaste.classList.remove('active');
+    uploadZoneWrap.classList.remove('hidden');
+    pasteZoneWrap.classList.add('hidden');
+  });
+
+  tabPaste.addEventListener('click', () => {
+    tabPaste.classList.add('active');
+    tabPdf.classList.remove('active');
+    pasteZoneWrap.classList.remove('hidden');
+    uploadZoneWrap.classList.add('hidden');
+  });
+
+  parsePasteBtn.addEventListener('click', () => {
+    const rawText = pasteInput.value.trim();
+    if (!rawText) {
+      window.Toast.show('Please paste some questions first.', 'error');
+      return;
+    }
+    const parsed = parseQuestionsFromText(rawText);
+    if (parsed.length > 0) {
+      renderParsedQuestions(parsed);
+      pasteZoneWrap.classList.add('hidden');
+      extractedBox.classList.remove('hidden');
+      window.Toast.show(`✅ ${parsed.length} questions parsed!`);
+    } else {
+      window.Toast.show('No questions could be framed from the text. Please check the format.', 'error');
+    }
+  });
+
   let currentMcqData = [];
 
   // Drag-and-Drop
@@ -336,11 +375,17 @@ document.addEventListener('DOMContentLoaded', () => {
       window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
       window.Toast.show(`"${title}" published with ${accepted.length} questions!`);
       // Reset
+      document.getElementById('mcq-title').value = '';
       uploadZone.classList.remove('hidden');
+      uploadZoneWrap.classList.remove('hidden');
+      pasteZoneWrap.classList.add('hidden');
+      tabPdf.classList.add('active');
+      tabPaste.classList.remove('active');
       extractedBox.classList.add('hidden');
       questionsList.innerHTML = '';
       currentMcqData = [];
       fileUpload.value = '';
+      pasteInput.value = '';
     });
   }
 
