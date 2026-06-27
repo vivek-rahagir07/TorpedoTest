@@ -1,80 +1,82 @@
+/* =====================================================
+   TORPEDO SKILLCHECK — MAIN.JS
+   Shared utilities: Theme, DB, Toast
+   ===================================================== */
+
+// ---- Theme Toggle ----
 document.addEventListener('DOMContentLoaded', () => {
-  const themeToggleBtn = document.getElementById('theme-toggle');
-  const icon = themeToggleBtn ? themeToggleBtn.querySelector('i') : null;
+  const themeBtn = document.getElementById('theme-toggle');
+  const icon     = themeBtn?.querySelector('i');
 
-  const savedTheme = localStorage.getItem('theme');
-  
-  if (savedTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  const applyTheme = (isDark) => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
     if (icon) {
-      icon.classList.remove('fa-moon');
-      icon.classList.add('fa-sun');
+      icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     }
-  } else {
-    document.documentElement.removeAttribute('data-theme');
-  }
+  };
 
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      
-      if (currentTheme === 'dark') {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-        if(icon) {
-          icon.classList.remove('fa-sun');
-          icon.classList.add('fa-moon');
-        }
-      } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        if(icon) {
-          icon.classList.remove('fa-moon');
-          icon.classList.add('fa-sun');
-        }
-      }
+  // Restore saved preference
+  const saved = localStorage.getItem('torpedo_theme');
+  applyTheme(saved === 'dark');
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const next = !isDark;
+      applyTheme(next);
+      localStorage.setItem('torpedo_theme', next ? 'dark' : 'light');
     });
   }
 });
 
-// --- Mock Database (LocalStorage) ---
+// ---- Assessment Database (LocalStorage) ----
 window.DB = {
-  getAssessments: function() {
-    const data = localStorage.getItem('torpedo_assessments');
-    return data ? JSON.parse(data) : [];
+  _KEY: 'torpedo_assessments',
+
+  getAssessments() {
+    try {
+      return JSON.parse(localStorage.getItem(this._KEY) || '[]');
+    } catch { return []; }
   },
-  saveAssessment: function(assessment) {
+
+  saveAssessment(assessment) {
     const data = this.getAssessments();
-    assessment.id = Date.now().toString();
+    assessment.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     assessment.createdAt = new Date().toISOString();
     data.push(assessment);
-    localStorage.setItem('torpedo_assessments', JSON.stringify(data));
+    localStorage.setItem(this._KEY, JSON.stringify(data));
     return assessment.id;
+  },
+
+  deleteAssessment(id) {
+    const data = this.getAssessments().filter(a => a.id !== id);
+    localStorage.setItem(this._KEY, JSON.stringify(data));
+  },
+
+  clearAll() {
+    localStorage.removeItem(this._KEY);
   }
 };
 
-// --- Toast Notification System ---
+// ---- Toast Notification System ----
 window.Toast = {
-  show: function(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type} animate-fade-in`;
-    toast.innerHTML = `
-      <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>
-      <span>${message}</span>
-    `;
-    
+  show(message, type = 'success', duration = 3500) {
     let container = document.getElementById('toast-container');
     if (!container) {
       container = document.createElement('div');
       container.id = 'toast-container';
       document.body.appendChild(container);
     }
-    
+
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span>${message}</span>`;
     container.appendChild(toast);
-    
+
     setTimeout(() => {
-      toast.style.animation = 'fadeOut 0.3s ease-out forwards';
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      toast.style.animation = 'fadeOut 0.35s ease-out forwards';
+      setTimeout(() => toast.remove(), 350);
+    }, duration);
   }
 };

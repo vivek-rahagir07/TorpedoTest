@@ -3,103 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Assessment - Torpedo SkillCheck</title>
+  <meta name="description" content="Student Portal — Attempt proctored assessments on Torpedo SkillCheck">
+  <title>Student Portal — Torpedo SkillCheck</title>
   <link rel="stylesheet" href="global.css">
   <link rel="stylesheet" href="student.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-  
-  <nav class="glass-panel navbar student-nav">
+
+  <nav class="glass-panel navbar">
     <div class="nav-brand">
-      <i class="fa-solid fa-user-graduate"></i>
-      <span>Student Portal</span>
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Student <span style="color:var(--success)">Portal</span></span>
     </div>
     <div id="status-indicators">
       <span class="badge badge-success"><i class="fa-solid fa-shield-halved"></i> Proctored</span>
-      <span class="badge badge-warning" id="flag-counter">Flags: 0</span>
+      <span class="badge badge-danger hidden" id="flag-counter"><i class="fa-solid fa-flag"></i> Flags: 0</span>
     </div>
   </nav>
 
-  <!-- Assessment List Screen -->
-  <main class="student-container" id="assessment-list-view">
-    <div class="glass-panel instructions-card animate-fade-in" style="max-width: 800px;">
-      <h2>Available Assessments</h2>
-      <p class="section-desc">Select an assessment to begin. Note that strict proctoring rules apply.</p>
-      
-      <div id="assessments-container" class="assessment-grid">
-        <!-- Rendered via JS -->
-      </div>
-      <a href="index.html" class="btn btn-outline" style="margin-top:2rem;"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
-    </div>
-  </main>
-
-  <!-- Pre-Assessment Screen -->
-  <main class="student-container hidden" id="pre-assessment">
-    <div class="glass-panel instructions-card animate-fade-in">
-      <h2 id="active-assessment-title">Assessment Title</h2>
-      
-      <div class="rules-box">
-        <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--warning);"></i> Strict Proctoring Rules</h3>
-        <ul>
-          <li>This assessment runs in <strong>full-screen mode</strong>.</li>
-          <li>Do not switch tabs, minimize the window, or open other applications.</li>
-          <li>Navigation away from the assessment will result in a <strong>flag</strong>.</li>
-          <li>Multiple flags may lead to automatic submission and termination.</li>
-        </ul>
-      </div>
-
-      <button class="btn btn-primary start-btn" id="start-btn">
-        <i class="fa-solid fa-play"></i> Start Assessment (Enter Full Screen)
-      </button>
-      <button class="btn btn-outline" id="back-to-list-btn" style="margin-top:1rem; width:100%;">Cancel</button>
-    </div>
-  </main>
-
-  <!-- Assessment Player Screen -->
-  <main class="student-container hidden" id="assessment-player">
-    <div class="player-layout">
-      <!-- Question Area -->
-      <div class="question-area glass-panel">
-        <div class="question-header">
-          <h3 id="question-tracker">Question 1 of x</h3>
-          <span class="timer">Time Left: <span id="time-left">60:00</span></span>
-        </div>
-        
-        <div class="question-content" id="dynamic-q-content">
-          <!-- Rendered via JS -->
-        </div>
-        
-        <div class="player-actions">
-          <button class="btn btn-outline" id="prev-btn">Previous</button>
-          <button class="btn btn-primary" id="next-btn">Next Question</button>
-        </div>
-      </div>
-
-      <!-- Navigation Sidebar -->
-      <div class="nav-sidebar glass-panel">
-        <h3>Question Palette</h3>
-        <div class="q-palette" id="q-palette">
-          <!-- Rendered via JS -->
-        </div>
-        <button class="btn btn-primary submit-exam-btn" id="submit-btn" style="width:100%; margin-top:2rem;">Submit Assessment</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Anti-Cheat Warning Modal -->
-  <div class="warning-overlay hidden" id="warning-modal">
-    <div class="warning-card animate-fade-in">
-      <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
-      <h2>Warning: Violation Detected!</h2>
-      <p>You have navigated away from the assessment window or exited full-screen mode.</p>
-      <p>This action has been logged. Continuous violations will result in automatic submission.</p>
-      <button class="btn btn-primary" id="resume-btn">Return to Full Screen & Resume</button>
+  <!-- ======= VIEW 1: Assessment List ======= -->
+  <div class="student-wrapper" id="view-list">
+    <div class="list-card glass-panel animate-fade-in">
+      <h2><i class="fa-solid fa-inbox" style="color:var(--accent-primary)"></i> Available Assessments</h2>
+      <p class="section-desc">Select an assessment below to begin. Strict proctoring rules apply once you start.</p>
+      <div id="assessments-container" class="assessment-grid"></div>
+      <a href="index.html" class="btn btn-outline" style="margin-top: 1rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Home
+      </a>
     </div>
   </div>
 
-  <script src="main.js"></script>
-  <script src="student.js"></script>
+  <!-- ======= VIEW 2: Pre-Assessment Instructions ======= -->
+  <div class="student-wrapper hidden" id="view-pre">
+    <div class="pre-card glass-panel animate-fade-in">
+      <div class="badge badge-warning" style="margin-bottom: 1rem">
+        <i class="fa-solid fa-clock"></i>
+        <span id="pre-type-badge">MCQ Assessment</span>
+      </div>
+      <h2 id="pre-title">Assessment Title</h2>
+      <p id="pre-meta" style="margin: 0.4rem 0 0; font-size: 0.9rem;"></p>
+
+      <div class="rules-box mt-3">
+        <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning)"></i> Proctoring Rules</h3>
+        <ul>
+          <li>This assessment runs in <strong>full-screen mode</strong>.</li>
+          <li>Switching tabs or minimizing will result in a <strong>flag</strong>.</li>
+          <li>Losing focus (clicking outside) will also be flagged.</li>
+          <li><strong>3 violations</strong> will auto-submit your assessment.</li>
+          <li>All flags are recorded and visible to your faculty.</li>
+        </ul>
+      </div>
+
+      <button class="btn btn-primary btn-block mt-3" id="start-btn">
+        <i class="fa-solid fa-play"></i> Start Assessment in Full Screen
+      </button>
+      <button class="btn btn-outline btn-block mt-2" id="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= VIEW 3: Assessment Player ======= -->
+  <div class="student-wrapper hidden" id="view-player">
+    <div class="player-layout">
+      <!-- Question Panel -->
+      <div class="question-area glass-panel">
+        <div class="question-header">
+          <span class="question-tracker" id="question-tracker">Question 1 of 1</span>
+          <div class="timer-badge" id="timer-badge">
+            <i class="fa-regular fa-clock"></i>
+            <span id="time-left">60:00</span>
+          </div>
+        </div>
+
+        <div id="dynamic-q-content">
+          <!-- Rendered by JS -->
+        </div>
+
+        <div class="player-actions">
+          <button class="btn btn-outline" id="prev-btn"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+          <button class="btn btn-primary" id="next-btn">Next <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Palette Sidebar -->
+      <div class="nav-sidebar glass-panel">
+        <h3>Question Palette</h3>
+        <div class="q-palette" id="q-palette"></div>
+
+        <div class="palette-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--accent-primary)"></div>
+            <span>Current</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--success)"></div>
+            <span>Answered</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--glass-bg-strong); border:1.5px solid var(--glass-border)"></div>
+            <span>Not Visited</span>
+          </div>
+        </div>
+
+        <button class="btn btn-danger btn-block" id="submit-btn">
+          <i class="fa-solid fa-paper-plane"></i> Submit Assessment
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= Anti-Cheat Warning Modal ======= -->
+  <div class="warning-overlay hidden" id="warning-modal">
+    <div class="warning-card">
+      <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
+      <h2 style="color: var(--danger); margin-bottom: 0.75rem;">Violation Detected!</h2>
+      <p id="warning-reason" style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.95rem;"></p>
+      <p style="margin-bottom: 2rem; font-size: 0.85rem; color: var(--text-secondary);">
+        This action has been <strong>flagged and logged</strong>. <br>
+        <span id="flags-remaining-text"></span>
+      </p>
+      <button class="btn btn-primary" id="resume-btn">
+        <i class="fa-solid fa-expand"></i> Return to Full Screen
+      </button>
+    </div>
+  </div>
+
+  <!-- ======= Results Screen ======= -->
+  <div class="student-wrapper hidden" id="view-results">
+    <div class="pre-card glass-panel animate-fade-in text-center">
+      <i class="fa-solid fa-circle-check" style="font-size:4rem; color:var(--success); display:block; margin-bottom:1rem;"></i>
+      <h2>Assessment Submitted!</h2>
+      <p id="results-summary" style="margin: 1rem 0;"></p>
+      <div id="results-score" style="font-size: 2.5rem; font-weight: 800; color: var(--accent-primary); margin: 1.5rem 0;"></div>
+      <a href="index.html" class="btn btn-primary mt-3"><i class="fa-solid fa-home"></i> Return Home</a>
+    </div>
+  </div>
+
+  <script src="main.js?v=4"></script>
+  <script src="student.js?v=4"></script>
 </body>
 </html>

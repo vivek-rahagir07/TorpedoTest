@@ -1,329 +1,403 @@
+/* =====================================================
+   FACULTY PORTAL — JS
+   Fully functional: PDF parsing, MCQ, Case, Coding
+   ===================================================== */
+
 document.addEventListener('DOMContentLoaded', () => {
-  // --- Navigation & Section Switching ---
+
+  // =====================================================
+  // 1. SIDEBAR NAVIGATION
+  // =====================================================
   const navItems = document.querySelectorAll('.nav-item');
   const sections = document.querySelectorAll('.assessment-section');
 
   navItems.forEach(item => {
     item.addEventListener('click', () => {
-      navItems.forEach(nav => nav.classList.remove('active'));
-      sections.forEach(sec => {
-        sec.classList.remove('active');
-        sec.classList.add('hidden');
-      });
+      navItems.forEach(n => n.classList.remove('active'));
+      sections.forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
 
       item.classList.add('active');
-      const targetId = item.getAttribute('data-target');
-      const targetSection = document.getElementById(targetId);
-      if (targetSection) {
-        targetSection.classList.add('active');
-        targetSection.classList.remove('hidden');
-      }
+      const target = document.getElementById(item.getAttribute('data-target'));
+      if (target) { target.classList.add('active'); target.style.display = 'block'; }
     });
   });
 
-  // --- MCQ Mock Parsing Logic ---
-  const fileUpload = document.getElementById('file-upload');
-  const uploadZone = document.getElementById('upload-zone');
-  const loader = document.getElementById('parsing-loader');
-  const extractedContainer = document.getElementById('extracted-questions');
+  // =====================================================
+  // 2. MCQ SECTION — PDF UPLOAD & PARSING
+  // =====================================================
+  const fileUpload   = document.getElementById('file-upload');
+  const uploadZone   = document.getElementById('upload-zone');
+  const loader       = document.getElementById('parsing-loader');
+  const extractedBox = document.getElementById('extracted-questions');
   const questionsList = document.getElementById('questions-list');
+  const qCountEl     = document.getElementById('q-count');
   const publishMcqBtn = document.getElementById('publish-mcq-btn');
 
   let currentMcqData = [];
 
-  uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadZone.classList.add('dragover');
-  });
-
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('dragover');
-  });
-
-  uploadZone.addEventListener('drop', (e) => {
+  // Drag-and-Drop
+  uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
     e.preventDefault();
     uploadZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length) {
-      handleFileUpload(e.dataTransfer.files[0]);
-    }
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
   });
 
-  fileUpload.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-      handleFileUpload(e.target.files[0]);
-    }
+  fileUpload.addEventListener('change', e => {
+    if (e.target.files[0]) handleFileUpload(e.target.files[0]);
+  });
+
+  // Click on zone to open file
+  uploadZone.addEventListener('click', e => {
+    if (e.target.closest('button')) return; // Don't double-trigger Browse button
+    fileUpload.click();
   });
 
   function handleFileUpload(file) {
     if (file.type !== 'application/pdf') {
-      window.Toast.show('Only PDF files are currently supported for parsing.', 'error');
+      window.Toast.show('Please upload a PDF file.', 'error');
       return;
     }
-
     uploadZone.classList.add('hidden');
     loader.classList.remove('hidden');
 
     const reader = new FileReader();
-    reader.onload = async function() {
+    reader.onload = async function () {
       try {
         const typedarray = new Uint8Array(this.result);
-        const pdf = await pdfjsLib.getDocument(typedarray).promise;
-        let fullText = "";
+        const pdfDoc = await pdfjsLib.getDocument({ data: typedarray }).promise;
+        let fullText = '';
 
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + "\\n";
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+          const page = await pdfDoc.getPage(i);
+          const content = await page.getTextContent();
+          // Join with space but preserve line-breaks using transform data
+          const pageText = content.items.map(item => item.str).join(' ');
+          fullText += pageText + '\n';
         }
 
-        console.log("--- PDF EXTRACTED TEXT ---");
-        console.log(fullText);
-        console.log("--------------------------");
+        console.log('--- PDF TEXT ---\n', fullText, '\n--- END ---');
 
-        const parsedQuestions = parseQuestionsFromText(fullText);
-        console.log("Parsed Questions:", parsedQuestions);
-        
+        const parsed = parseQuestionsFromText(fullText);
+        console.log('Parsed:', parsed);
+
         loader.classList.add('hidden');
-        if (parsedQuestions.length > 0) {
-          renderParsedQuestions(parsedQuestions);
-          extractedContainer.classList.remove('hidden');
-          window.Toast.show(`Successfully extracted ${parsedQuestions.length} questions!`);
+        if (parsed.length > 0) {
+          renderParsedQuestions(parsed);
+          extractedBox.classList.remove('hidden');
+          window.Toast.show(`✅ ${parsed.length} questions extracted!`);
         } else {
           uploadZone.classList.remove('hidden');
-          window.Toast.show('Could not find any standard questions in the PDF. Please check the formatting.', 'error');
+          window.Toast.show('No questions found. Check the PDF format.', 'error');
         }
       } catch (err) {
         console.error(err);
         loader.classList.add('hidden');
         uploadZone.classList.remove('hidden');
-        window.Toast.show('Error reading PDF file.', 'error');
+        window.Toast.show('Error reading PDF: ' + err.message, 'error');
       }
     };
     reader.readAsArrayBuffer(file);
   }
 
-  function parseQuestionsFromText(text) {
+  // ---- PARSER ----
+  function parseQuestionsFromText(rawText) {
+    // Normalize: collapse multiple spaces/newlines to a single space
+    let text = rawText.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
+
     const questions = [];
-    
-    // Normalize spaces and newlines
-    text = text.replace(/\s+/g, ' ');
-    
-    // Use (?:^|\s) instead of \b to be more robust against pdf.js spacing quirks
-    const qRegex = /(?:(?:^|\s)Q?\d+\s*[\.\)]\s*)(.*?)(?=(?:(?:^|\s)Q?\d+\s*[\.\)]|$))/g;
-    let match;
-    
-    while ((match = qRegex.exec(text)) !== null) {
-      const block = match[1];
-      if (block.length < 10) continue; 
-      
-      const optRegex = /(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]\s*(.*?)(?=(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]|\b(?:Correct\s+)?Answer:|$)/gi;
-      let opts = [];
-      let optMatch;
-      
-      let qText = block.split(/(?:^|\s)(?:[A-D]|[a-d])\s*[\.\)]/i)[0].trim();
-      
-      while ((optMatch = optRegex.exec(block)) !== null) {
-        const optionText = optMatch[1].trim();
-        if (optionText.toLowerCase().includes('answer:')) break;
-        if (opts.length >= 4) break; // Force maximum of 4 options to prevent bleeding
-        if (optionText.length > 0) opts.push(optionText);
-      }
-      
-      let ansIndex = 0; 
-      const ansMatch = block.match(/(?:Correct\s+)?Answer:\s*([A-D]|[a-d])/i);
-      if (ansMatch) {
-        const char = ansMatch[1].toLowerCase();
-        if (char === 'a') ansIndex = 0;
-        else if (char === 'b') ansIndex = 1;
-        else if (char === 'c') ansIndex = 2;
-        else if (char === 'd') ansIndex = 3;
-      }
-      
-      if (qText && opts.length > 1) {
-        questions.push({
-          q: qText,
-          opts: opts,
-          ans: ansIndex,
-          accepted: true
-        });
-      }
+
+    // Split text into question blocks by finding "1." "2." "1)" "Q1." etc.
+    // Strategy: split on question-number patterns, then parse each block
+    const blocks = splitIntoBlocks(text);
+
+    for (const block of blocks) {
+      const q = parseBlock(block);
+      if (q) questions.push(q);
     }
     return questions;
   }
 
-  function renderParsedQuestions(parsedData) {
-    currentMcqData = parsedData;
+  function splitIntoBlocks(text) {
+    // Match start of a new question: number followed by . or ) at start or after newline
+    const qStartRegex = /(?:^|\n)\s*(?:Q\.?\s*)?\d+\s*[.)]/g;
+    const positions = [];
+    let m;
+    while ((m = qStartRegex.exec(text)) !== null) {
+      positions.push(m.index + (m[0].startsWith('\n') ? 1 : 0));
+    }
+
+    const blocks = [];
+    for (let i = 0; i < positions.length; i++) {
+      const start = positions[i];
+      const end   = positions[i + 1] ?? text.length;
+      blocks.push(text.slice(start, end).trim());
+    }
+    return blocks;
+  }
+
+  function parseBlock(block) {
+    if (block.length < 15) return null;
+
+    // Remove leading question number
+    let text = block.replace(/^(?:Q\.?\s*)?\d+\s*[.)]\s*/, '').trim();
+
+    // Find where options start: look for first A. or A) or (A)
+    const optStartRegex = /(?:^|\n|\s)\(?[A-Da-d]\s*[.)]\s/;
+    const optStartMatch = optStartRegex.exec(text);
+    if (!optStartMatch) return null;
+
+    const qText = text.slice(0, optStartMatch.index).trim();
+    if (qText.length < 5) return null;
+
+    const optionsBlock = text.slice(optStartMatch.index).trim();
+
+    // Extract each option
+    const optRegex = /(?:^|\n|\s)\(?([A-Da-d])\s*[.)]\s*(.*?)(?=(?:\n|\s)\(?[A-Da-d]\s*[.)]|\bAnswer|\bCorrect|$)/gis;
+    const opts = [];
+    let om;
+    while ((om = optRegex.exec(optionsBlock)) !== null) {
+      const optText = om[2].trim();
+      if (optText.length === 0) continue;
+      if (/^(answer|correct)/i.test(optText)) break;
+      if (opts.length >= 4) break;
+      opts.push(optText);
+    }
+
+    if (opts.length < 2) return null;
+
+    // Find correct answer
+    const answerMatch = block.match(/(?:Correct\s+Answer|Answer)\s*[:\-]?\s*\(?([A-Da-d])\b/i);
+    let ansIndex = -1;
+    if (answerMatch) {
+      const ch = answerMatch[1].toLowerCase();
+      ansIndex = 'abcd'.indexOf(ch);
+    }
+
+    return { q: qText, opts, ans: ansIndex >= 0 ? ansIndex : 0, accepted: true };
+  }
+
+  // ---- RENDER ----
+  function renderParsedQuestions(data) {
+    currentMcqData = data;
     questionsList.innerHTML = '';
-    
-    currentMcqData.forEach((item, index) => {
-      const qDiv = document.createElement('div');
-      qDiv.className = 'mcq-item glass-panel animate-fade-in';
-      qDiv.style.animationDelay = `${index * 0.1}s`;
+    qCountEl.textContent = data.length;
 
-      let optionsHTML = '';
-      item.opts.forEach((opt, oIdx) => {
-        const isCorrect = oIdx === item.ans ? 'correct-option' : '';
-        optionsHTML += `<li class="${isCorrect}">${opt}</li>`;
-      });
+    const labels = ['A', 'B', 'C', 'D'];
 
-      qDiv.innerHTML = `
+    data.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'mcq-item animate-fade-in';
+      div.style.animationDelay = `${index * 0.06}s`;
+
+      let optsHtml = item.opts.map((opt, i) => `
+        <li class="${i === item.ans ? 'correct-option' : ''}" data-label="${labels[i]}">
+          ${opt}
+        </li>`).join('');
+
+      div.innerHTML = `
         <div class="mcq-content">
-          <h4>Q${index + 1}: ${item.q}</h4>
-          <ul class="mcq-options">
-            ${optionsHTML}
-          </ul>
+          <h4>Q${index + 1}. ${item.q}</h4>
+          <ul class="mcq-options">${optsHtml}</ul>
         </div>
         <div class="mcq-actions">
-          <button class="btn-icon btn-accept active" title="Accept"><i class="fa-solid fa-check"></i></button>
-          <button class="btn-icon btn-reject" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+          <button class="btn-icon btn-accept active" title="Accept this question">
+            <i class="fa-solid fa-check"></i>
+          </button>
+          <button class="btn-icon btn-reject" title="Reject this question">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
       `;
 
-      questionsList.appendChild(qDiv);
+      questionsList.appendChild(div);
 
-      const btnAccept = qDiv.querySelector('.btn-accept');
-      const btnReject = qDiv.querySelector('.btn-reject');
+      // ---- FIX: Wire up buttons AFTER appending to DOM ----
+      const acceptBtn = div.querySelector('.btn-accept');
+      const rejectBtn = div.querySelector('.btn-reject');
 
-      btnAccept.addEventListener('click', () => {
-        btnAccept.classList.add('active');
-        btnReject.classList.remove('active');
-        qDiv.style.opacity = '1';
+      acceptBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         item.accepted = true;
+        div.classList.remove('rejected');
+        acceptBtn.classList.add('active');
+        rejectBtn.classList.remove('active');
       });
 
-      btnReject.addEventListener('click', () => {
-        btnReject.classList.add('active');
-        btnAccept.classList.remove('active');
-        qDiv.style.opacity = '0.5';
+      rejectBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         item.accepted = false;
+        div.classList.add('rejected');
+        rejectBtn.classList.add('active');
+        acceptBtn.classList.remove('active');
       });
     });
   }
 
+  // ---- PUBLISH MCQ ----
   if (publishMcqBtn) {
     publishMcqBtn.addEventListener('click', () => {
-      const finalQuestions = currentMcqData.filter(q => q.accepted);
-      
-      const assessment = {
-        title: "Parsed MCQ Assessment",
-        type: "mcq",
-        questions: finalQuestions
-      };
-      
-      window.DB.saveAssessment(assessment);
-      window.Toast.show("MCQ Assessment Published Successfully!");
-      
-      extractedContainer.classList.add('hidden');
+      const accepted = currentMcqData.filter(q => q.accepted);
+      if (accepted.length === 0) {
+        window.Toast.show('Accept at least one question first.', 'error');
+        return;
+      }
+      const title = document.getElementById('mcq-title').value.trim() || 'MCQ Assessment';
+      window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
+      window.Toast.show(`"${title}" published with ${accepted.length} questions!`);
+      // Reset
       uploadZone.classList.remove('hidden');
+      extractedBox.classList.add('hidden');
+      questionsList.innerHTML = '';
+      currentMcqData = [];
+      fileUpload.value = '';
     });
   }
 
-  // --- Case Based Section ---
-  const addCaseQBtn = document.getElementById('add-case-q-btn');
-  const caseQContainer = document.getElementById('case-questions-container');
+  // =====================================================
+  // 3. CASE BASED SECTION
+  // =====================================================
+  const caseContainer = document.getElementById('case-questions-container');
+  const addCaseQBtn   = document.getElementById('add-case-q-btn');
   const publishCaseBtn = document.getElementById('publish-case-btn');
-  let caseQCount = 1;
+  let caseQCount = 0;
+
+  function addCaseQuestion() {
+    caseQCount++;
+    const div = document.createElement('div');
+    div.className = 'question-card animate-fade-in';
+
+    div.innerHTML = `
+      <div class="question-card-header">
+        <h4><i class="fa-solid fa-circle-question"></i> Question ${caseQCount}</h4>
+        <button class="btn-remove-card" title="Remove"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Question Text</label>
+        <input type="text" class="form-control case-q-text" placeholder="e.g. What strategy should the company adopt?">
+      </div>
+      <div class="form-group">
+        <label>Model Answer / Marking Rubric</label>
+        <textarea class="form-control case-q-ans" rows="3" placeholder="Enter expected answer keywords, or full model answer..."></textarea>
+      </div>
+    `;
+    caseContainer.appendChild(div);
+
+    div.querySelector('.btn-remove-card').addEventListener('click', () => {
+      div.remove();
+      caseQCount--;
+    });
+  }
+
+  // Initialize with 1 question
+  addCaseQuestion();
 
   if (addCaseQBtn) {
-    addCaseQBtn.addEventListener('click', () => {
-      caseQCount++;
-      const div = document.createElement('div');
-      div.className = 'question-card glass-panel animate-fade-in';
-      div.innerHTML = `
-        <div class="form-group">
-          <label>Question ${caseQCount}</label>
-          <input type="text" class="form-control case-q-input" placeholder="Enter question">
-        </div>
-        <div class="form-group">
-          <label>Expected Answer (Keywords/Rubric)</label>
-          <textarea class="form-control case-q-ans" rows="2" placeholder="Keywords to look for in student's answer..."></textarea>
-        </div>
-      `;
-      caseQContainer.appendChild(div);
-    });
+    addCaseQBtn.addEventListener('click', addCaseQuestion);
   }
 
   if (publishCaseBtn) {
     publishCaseBtn.addEventListener('click', () => {
-      const title = document.getElementById('case-title').value || "Case Study Assessment";
-      const content = document.getElementById('case-content').value;
-      
-      const qCards = caseQContainer.querySelectorAll('.question-card');
+      const title   = document.getElementById('case-title').value.trim() || 'Case Study Assessment';
+      const content = document.getElementById('case-content').value.trim();
+      if (!content) { window.Toast.show('Please add case study content.', 'error'); return; }
+
       const questions = [];
-      qCards.forEach(card => {
-        questions.push({
-          q: card.querySelector('.case-q-input')?.value || "",
-          ans: card.querySelector('.case-q-ans')?.value || ""
-        });
+      caseContainer.querySelectorAll('.question-card').forEach(card => {
+        const q = card.querySelector('.case-q-text')?.value.trim();
+        const a = card.querySelector('.case-q-ans')?.value.trim();
+        if (q) questions.push({ q, ans: a || '' });
       });
-      
-      window.DB.saveAssessment({
-        title,
-        type: "case",
-        content,
-        questions
-      });
-      window.Toast.show("Case Assessment Published!");
-      
+
+      if (questions.length === 0) { window.Toast.show('Add at least one question.', 'error'); return; }
+
+      window.DB.saveAssessment({ title, type: 'case', content, questions });
+      window.Toast.show(`"${title}" published with ${questions.length} questions!`);
       // Reset
       document.getElementById('case-title').value = '';
       document.getElementById('case-content').value = '';
+      caseContainer.innerHTML = '';
+      caseQCount = 0;
+      addCaseQuestion();
     });
   }
 
-  // --- Coding Section ---
-  const addCodingQBtn = document.getElementById('add-coding-q-btn');
-  const codingQContainer = document.getElementById('coding-questions-container');
+  // =====================================================
+  // 4. CODING SECTION
+  // =====================================================
+  const codingContainer  = document.getElementById('coding-questions-container');
+  const addCodingQBtn    = document.getElementById('add-coding-q-btn');
   const publishCodingBtn = document.getElementById('publish-coding-btn');
+  let codingQCount = 0;
+
+  function addCodingProblem() {
+    codingQCount++;
+    const div = document.createElement('div');
+    div.className = 'question-card animate-fade-in';
+
+    div.innerHTML = `
+      <div class="question-card-header">
+        <h4><i class="fa-solid fa-terminal"></i> Problem ${codingQCount}</h4>
+        <button class="btn-remove-card" title="Remove"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Problem Title</label>
+        <input type="text" class="form-control coding-prob-title" placeholder="e.g. Two Sum">
+      </div>
+      <div class="form-group">
+        <label>Problem Statement</label>
+        <textarea class="form-control coding-prob-desc" rows="4" placeholder="Describe the problem, constraints, and examples..."></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Sample Input</label>
+          <textarea class="form-control code-font coding-prob-in" rows="3" placeholder="nums = [2,7,11,15]\ntarget = 9"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Expected Output</label>
+          <textarea class="form-control code-font coding-prob-out" rows="3" placeholder="[0, 1]"></textarea>
+        </div>
+      </div>
+    `;
+    codingContainer.appendChild(div);
+
+    div.querySelector('.btn-remove-card').addEventListener('click', () => {
+      div.remove();
+      codingQCount--;
+    });
+  }
+
+  // Initialize with 1 problem
+  addCodingProblem();
 
   if (addCodingQBtn) {
-    addCodingQBtn.addEventListener('click', () => {
-      const div = document.createElement('div');
-      div.className = 'question-card glass-panel animate-fade-in';
-      div.innerHTML = `
-        <div class="form-group">
-          <label>Problem Title</label>
-          <input type="text" class="form-control coding-title" placeholder="e.g. Reverse String">
-        </div>
-        <div class="form-group">
-          <label>Problem Statement</label>
-          <textarea class="form-control coding-desc" rows="4" placeholder="Describe the problem, constraints, etc."></textarea>
-        </div>
-        <div class="grid-2">
-          <div class="form-group">
-            <label>Sample Input</label>
-            <textarea class="form-control code-font coding-in" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label>Expected Output</label>
-            <textarea class="form-control code-font coding-out" rows="3"></textarea>
-          </div>
-        </div>
-      `;
-      codingQContainer.appendChild(div);
-    });
+    addCodingQBtn.addEventListener('click', addCodingProblem);
   }
 
   if (publishCodingBtn) {
     publishCodingBtn.addEventListener('click', () => {
-      const qCards = codingQContainer.querySelectorAll('.question-card');
+      const title = document.getElementById('coding-title-main').value.trim() || 'Coding Assessment';
       const questions = [];
-      qCards.forEach(card => {
+      codingContainer.querySelectorAll('.question-card').forEach(card => {
         questions.push({
-          title: card.querySelector('.coding-title')?.value || "Coding Problem",
-          desc: card.querySelector('.coding-desc')?.value || "",
-          input: card.querySelector('.coding-in')?.value || "",
-          output: card.querySelector('.coding-out')?.value || ""
+          title: card.querySelector('.coding-prob-title')?.value.trim() || 'Problem',
+          desc:  card.querySelector('.coding-prob-desc')?.value.trim() || '',
+          input: card.querySelector('.coding-prob-in')?.value.trim() || '',
+          output: card.querySelector('.coding-prob-out')?.value.trim() || ''
         });
       });
-      
-      window.DB.saveAssessment({
-        title: "Coding Assessment",
-        type: "coding",
-        questions
-      });
-      window.Toast.show("Coding Assessment Published!");
+
+      if (questions.length === 0) { window.Toast.show('Add at least one problem.', 'error'); return; }
+
+      window.DB.saveAssessment({ title, type: 'coding', questions });
+      window.Toast.show(`"${title}" published with ${questions.length} problem(s)!`);
+      document.getElementById('coding-title-main').value = '';
+      codingContainer.innerHTML = '';
+      codingQCount = 0;
+      addCodingProblem();
     });
   }
+
 });

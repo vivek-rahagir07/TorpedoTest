@@ -3,136 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Torpedo SkillCheck Portal</title>
+  <meta name="description" content="Torpedo SkillCheck — Advanced Assessment & Proctoring Platform for Students and Faculty">
+  <title>Torpedo SkillCheck — Assessment Portal</title>
   <link rel="stylesheet" href="global.css">
-  <!-- Google Fonts: Inter -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- FontAwesome for Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    .portal-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
+    body { align-items: center; justify-content: center; }
+
+    .hero-section {
+      text-align: center;
+      max-width: 860px;
+      width: 100%;
       padding: 2rem;
-      position: relative;
-      overflow: hidden;
+      animation: fadeInUp 0.6s ease-out both;
     }
-    
-    /* Dynamic animated background bubbles */
-    .bg-bubble {
-      position: absolute;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-primary), var(--success));
-      opacity: 0.1;
-      filter: blur(40px);
-      z-index: 0;
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent-primary);
+      margin-bottom: 2rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
-    
-    .bubble-1 {
-      width: 400px;
-      height: 400px;
-      top: -100px;
-      left: -100px;
-      animation: float 8s ease-in-out infinite;
+
+    .hero-title {
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 50%, var(--success) 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
     }
-    
-    .bubble-2 {
-      width: 500px;
-      height: 500px;
-      bottom: -150px;
-      right: -100px;
-      background: linear-gradient(135deg, var(--warning), var(--danger));
-      animation: float 12s ease-in-out infinite reverse;
+
+    .hero-subtitle {
+      font-size: 1.2rem;
+      margin-bottom: 3.5rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
-    
-    @keyframes float {
-      0% { transform: translate(0, 0); }
-      50% { transform: translate(30px, 20px); }
-      100% { transform: translate(0, 0); }
+
+    .portal-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
     }
 
     .portal-card {
-      z-index: 1;
-      max-width: 800px;
-      width: 100%;
-      padding: 4rem 2rem;
-      text-align: center;
-    }
-
-    .portal-title {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      background: linear-gradient(135deg, var(--accent-primary), #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .portal-subtitle {
-      font-size: 1.2rem;
-      margin-bottom: 4rem;
-    }
-
-    .cards-wrapper {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-    }
-
-    .role-card {
-      padding: 3rem 2rem;
+      padding: 2.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-decoration: none;
       color: var(--text-primary);
       transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
     }
 
-    .role-card:hover {
-      transform: translateY(-10px);
-      border-color: var(--accent-primary);
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, var(--accent-primary), transparent 60%);
+      opacity: 0;
+      transition: var(--transition);
     }
 
-    .role-icon {
-      font-size: 4rem;
+    .portal-card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px var(--accent-glow); }
+    .portal-card:hover::before { opacity: 0.07; }
+    .portal-card:hover .card-icon { transform: scale(1.15); color: var(--accent-primary); }
+
+    .card-icon-wrap {
+      width: 90px; height: 90px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      display: flex; align-items: center; justify-content: center;
       margin-bottom: 1.5rem;
-      color: var(--accent-primary);
+      box-shadow: 0 8px 30px var(--accent-glow);
+      position: relative; z-index: 1;
     }
 
-    .role-title {
-      font-size: 1.8rem;
-      margin-bottom: 1rem;
+    .card-icon { font-size: 2.2rem; color: white; transition: var(--transition); }
+
+    .card-title { font-size: 1.6rem; margin-bottom: 0.75rem; font-weight: 700; position: relative; z-index: 1; }
+    .card-desc { color: var(--text-secondary); text-align: center; line-height: 1.6; position: relative; z-index: 1; margin-bottom: 1.5rem; }
+
+    .card-arrow {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--accent-primary);
+      position: relative; z-index: 1;
+      transition: var(--transition);
     }
+    .portal-card:hover .card-arrow { gap: 0.7rem; }
+
+    .student-card .card-icon-wrap {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 8px 30px rgba(16,185,129,0.3);
+    }
+
+    .features-row {
+      display: flex; justify-content: center; gap: 2rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .feature-pill {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 99px;
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .feature-pill i { color: var(--accent-primary); }
   </style>
 </head>
 <body>
-  
-  <div class="portal-container">
-    <div class="bg-bubble bubble-1"></div>
-    <div class="bg-bubble bubble-2"></div>
 
-    <div class="portal-card glass-panel animate-fade-in">
-      <h1 class="portal-title">Torpedo SkillCheck</h1>
-      <p class="portal-subtitle">Advanced Assessment & Proctoring Platform</p>
+  <div class="hero-section">
+    <div class="logo-badge">
+      <i class="fa-solid fa-shield-halved"></i>
+      Torpedo SkillCheck Platform
+    </div>
 
-      <div class="cards-wrapper">
-        <a href="student.html" class="role-card glass-panel">
-          <i class="fa-solid fa-user-graduate role-icon"></i>
-          <h2 class="role-title">Student Portal</h2>
-          <p>Take your assessments in a secure, proctored environment.</p>
-        </a>
+    <h1 class="hero-title">Assess. Learn.<br>Succeed.</h1>
+    <p class="hero-subtitle">A professional assessment platform with real-time proctoring, MCQ parsing, case studies, and coding challenges.</p>
 
-        <a href="faculty.html" class="role-card glass-panel">
-          <i class="fa-solid fa-chalkboard-user role-icon"></i>
-          <h2 class="role-title">Faculty Portal</h2>
-          <p>Create and manage MCQ, Case-Based, and Coding assessments.</p>
-        </a>
-      </div>
+    <div class="portal-cards">
+      <a href="faculty.html" class="portal-card glass-panel animate-fade-in" style="animation-delay: 0.1s">
+        <div class="card-icon-wrap">
+          <i class="fa-solid fa-chalkboard-user card-icon"></i>
+        </div>
+        <h2 class="card-title">Faculty Portal</h2>
+        <p class="card-desc">Create MCQ, Case-Based, and Coding assessments. Upload PDFs, manage questions, and publish exams.</p>
+        <span class="card-arrow">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+
+      <a href="student.html" class="portal-card glass-panel student-card animate-fade-in" style="animation-delay: 0.2s">
+        <div class="card-icon-wrap">
+          <i class="fa-solid fa-user-graduate card-icon"></i>
+        </div>
+        <h2 class="card-title">Student Portal</h2>
+        <p class="card-desc">Attempt assessments in a secure, proctored full-screen environment with anti-cheat monitoring.</p>
+        <span class="card-arrow" style="color: var(--success)">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
+      </a>
+    </div>
+
+    <div class="features-row">
+      <div class="feature-pill"><i class="fa-solid fa-lock"></i> Anti-Cheat Proctoring</div>
+      <div class="feature-pill"><i class="fa-solid fa-file-pdf"></i> PDF Question Parsing</div>
+      <div class="feature-pill"><i class="fa-solid fa-code"></i> Coding Challenges</div>
+      <div class="feature-pill"><i class="fa-solid fa-moon"></i> Dark Mode</div>
     </div>
   </div>
 
@@ -140,6 +180,6 @@
     <i class="fa-solid fa-moon"></i>
   </button>
 
-  <script src="main.js"></script>
+  <script src="main.js?v=4"></script>
 </body>
 </html>
