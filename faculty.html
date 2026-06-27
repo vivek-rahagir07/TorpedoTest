@@ -126,6 +126,20 @@ Correct Answer: B"></textarea>
             </button>
           </div>
         </div>
+
+        <!-- Invite Code Banner — shown after publish -->
+        <div id="invite-banner" class="invite-banner hidden">
+          <div class="invite-banner-inner">
+            <div>
+              <p class="invite-label"><i class="fa-solid fa-link"></i> Assessment Published! Share this invite code with students:</p>
+              <div class="invite-code-display" id="invite-code-text">------</div>
+            </div>
+            <div class="invite-actions">
+              <button class="btn btn-outline btn-sm" id="copy-invite-code-btn"><i class="fa-solid fa-copy"></i> Copy Code</button>
+              <button class="btn btn-primary btn-sm" id="copy-invite-link-btn"><i class="fa-solid fa-share-nodes"></i> Copy Link</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- =================== CASE SECTION =================== -->
@@ -203,10 +217,10 @@ Correct Answer: B"></textarea>
             <thead>
               <tr>
                 <th>Student</th>
-                <th>Assessment Title</th>
+                <th>Assessment</th>
                 <th>Score</th>
-                <th>Proctor Flags</th>
-                <th>Violations Log</th>
+                <th>Flags</th>
+                <th>Violations &amp; Appeals</th>
               </tr>
             </thead>
             <tbody id="logs-table-body">
@@ -216,8 +230,11 @@ Correct Answer: B"></textarea>
         </div>
 
         <div class="action-buttons">
+          <button class="btn btn-outline btn-sm" id="export-csv-btn">
+            <i class="fa-solid fa-file-csv"></i> Export CSV
+          </button>
           <button class="btn btn-danger btn-outline btn-sm" id="clear-logs-btn">
-            <i class="fa-solid fa-trash"></i> Clear Submission Logs
+            <i class="fa-solid fa-trash"></i> Clear Logs
           </button>
         </div>
       </div>
@@ -233,7 +250,7 @@ Correct Answer: B"></textarea>
     }
   </script>
 
-  <script src="main.js?v=4"></script>
-  <script src="faculty.js?v=4"></script>
+  <script src="main.js?v=5"></script>
+  <script src="faculty.js?v=5"></script>
 </body>
 </html>

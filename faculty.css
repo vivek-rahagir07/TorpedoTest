@@ -491,3 +491,51 @@
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
+/* ---- Invite Code Banner ---- */
+.invite-banner {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(139,92,246,0.07));
+  border: 1.5px solid rgba(79,70,229,0.25);
+  border-radius: var(--radius-md);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.invite-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.invite-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.invite-code-display {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: var(--accent-primary);
+  background: var(--glass-bg-strong);
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 1.25rem;
+  display: inline-block;
+}
+
+.invite-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+

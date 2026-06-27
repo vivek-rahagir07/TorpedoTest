@@ -22,13 +22,33 @@
     </div>
   </nav>
 
-  <!-- ======= VIEW 1: Assessment List ======= -->
+  <!-- ======= VIEW 0: JOIN ASSESSMENT FORM ======= -->
   <div class="student-wrapper" id="view-list">
-    <div class="list-card glass-panel animate-fade-in">
-      <h2><i class="fa-solid fa-inbox" style="color:var(--accent-primary)"></i> Available Assessments</h2>
-      <p class="section-desc">Select an assessment below to begin. Strict proctoring rules apply once you start.</p>
-      <div id="assessments-container" class="assessment-grid"></div>
-      <a href="index.html" class="btn btn-outline" style="margin-top: 1rem;">
+    <div class="pre-card glass-panel animate-fade-in" style="max-width: 500px;">
+      <div class="text-center" style="margin-bottom: 1.5rem;">
+        <i class="fa-solid fa-shield-halved" style="font-size:2.5rem; color:var(--accent-primary); display:block; margin-bottom:0.75rem;"></i>
+        <h2 style="font-size:1.5rem;">Join an Assessment</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem;">Enter your details and the invite code provided by your faculty.</p>
+      </div>
+
+      <div class="form-group">
+        <label>Your Full Name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="join-name" class="form-control" placeholder="e.g. Ravi Sharma" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label>Email / Student ID</label>
+        <input type="email" id="join-email" class="form-control" placeholder="e.g. ravi@college.edu" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Assessment Invite Code <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="join-code" class="form-control join-code-input" placeholder="e.g. TRP8A4" maxlength="6" autocomplete="off" style="letter-spacing: 0.2em; text-transform: uppercase; font-family: monospace; font-size: 1.2rem;">
+      </div>
+      <div id="join-error" class="join-error hidden"><i class="fa-solid fa-circle-xmark"></i> <span id="join-error-msg">Invalid code.</span></div>
+
+      <button class="btn btn-primary btn-block mt-2" id="join-btn">
+        <i class="fa-solid fa-door-open"></i> Join Assessment
+      </button>
+      <a href="index.html" class="btn btn-outline btn-block mt-2">
         <i class="fa-solid fa-arrow-left"></i> Back to Home
       </a>
     </div>
@@ -45,6 +65,13 @@
           <div class="syscheck-info">
             <i class="fa-solid fa-camera check-icon"></i>
             <span>Webcam &amp; Feed Authorisation</span>
+          </div>
+          <span class="syscheck-status"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking...</span>
+        </div>
+        <div class="syscheck-item" id="check-mic">
+          <div class="syscheck-info">
+            <i class="fa-solid fa-microphone check-icon"></i>
+            <span>Microphone &amp; Audio Monitor</span>
           </div>
           <span class="syscheck-status"><i class="fa-solid fa-circle-notch fa-spin"></i> Checking...</span>
         </div>
@@ -180,11 +207,17 @@
       <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
       <h2 style="color: var(--danger); margin-bottom: 0.75rem;">Violation Detected!</h2>
       <p id="warning-reason" style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.95rem;"></p>
-      <p style="margin-bottom: 2rem; font-size: 0.85rem; color: var(--text-secondary);">
+      <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
         This action has been <strong>flagged and logged</strong>. <br>
         <span id="flags-remaining-text"></span>
       </p>
-      <button class="btn btn-primary" id="resume-btn">
+      <div class="appeal-box">
+        <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.4rem;">
+          <i class="fa-solid fa-comment"></i> Brief Appeal (optional, max 50 chars)
+        </label>
+        <input type="text" id="appeal-input" class="form-control" maxlength="50" placeholder="e.g. Adjusting glasses" style="font-size:0.9rem;">
+      </div>
+      <button class="btn btn-primary mt-3" id="resume-btn">
         <i class="fa-solid fa-expand"></i> Return to Full Screen
       </button>
     </div>
@@ -201,7 +234,7 @@
     </div>
   </div>
 
-  <script src="main.js?v=4"></script>
-  <script src="student.js?v=4"></script>
+  <script src="main.js?v=5"></script>
+  <script src="student.js?v=5"></script>
 </body>
 </html>

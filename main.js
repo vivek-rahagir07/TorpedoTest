@@ -43,6 +43,9 @@ window.DB = {
     const data = this.getAssessments();
     assessment.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     assessment.createdAt = new Date().toISOString();
+    // Generate 6-char uppercase invite code, e.g. TRP8A4
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    assessment.inviteCode = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     data.push(assessment);
     localStorage.setItem(this._KEY, JSON.stringify(data));
     return assessment.id;
@@ -69,11 +72,19 @@ window.DB = {
   saveSubmission(submission) {
     const data = this.getSubmissions();
     submission.id = 'sub-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    submission.submittedAt = new Date().toISOString();
+    // Only set submittedAt if the caller didn't already provide one
+    if (!submission.submittedAt) {
+      submission.submittedAt = new Date().toLocaleString();
+    }
+    // Normalise title field for faculty logs
+    if (submission.title && !submission.assessmentTitle) {
+      submission.assessmentTitle = submission.title;
+    }
     data.push(submission);
     localStorage.setItem(this._SUB_KEY, JSON.stringify(data));
     return submission.id;
   },
+
 
   clearSubmissions() {
     localStorage.removeItem(this._SUB_KEY);

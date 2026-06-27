@@ -64,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let secondsLeft       = 0;
   let violationsLog     = [];   // List of strings representing violations
   let cameraStream      = null;
+  let audioStream       = null;
+  let audioCtx          = null;
+  let audioAnalyser     = null;
+  let studentName       = 'Student';
+  let studentEmail      = '';
+  let pendingViolationReason = '';
 
   // ---- Helper: Show View ----
   function showView(view) {
@@ -74,20 +80,76 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   // 1. LOAD ASSESSMENTS
   // ===========================================================
-  function loadAssessments() {
-    assessments = window.DB ? window.DB.getAssessments() : [];
+  // ===========================================================
+  // 1. JOIN FORM — Invite Code Flow
+  // ===========================================================
+  const joinBtn   = document.getElementById('join-btn');
+  const joinCode  = document.getElementById('join-code');
+  const joinName  = document.getElementById('join-name');
+  const joinEmail = document.getElementById('join-email');
+  const joinError = document.getElementById('join-error');
+  const joinErrorMsg = document.getElementById('join-error-msg');
+
+  // Auto-fill from URL param ?code=XXXXXX
+  const urlCode = new URLSearchParams(window.location.search).get('code');
+  if (urlCode && joinCode) joinCode.value = urlCode.toUpperCase();
+
+  if (joinBtn) {
+    joinBtn.addEventListener('click', () => {
+      const name = joinName ? joinName.value.trim() : '';
+      const email = joinEmail ? joinEmail.value.trim() : '';
+      const code = joinCode ? joinCode.value.trim().toUpperCase() : '';
+
+      joinError.classList.add('hidden');
+
+      if (!name) {
+        joinErrorMsg.textContent = 'Please enter your full name.';
+        joinError.classList.remove('hidden');
+        joinName.focus();
+        return;
+      }
+      if (!code || code.length < 4) {
+        joinErrorMsg.textContent = 'Please enter a valid invite code.';
+        joinError.classList.remove('hidden');
+        joinCode.focus();
+        return;
+      }
+
+      assessments = window.DB ? window.DB.getAssessments() : [];
+      const found = assessments.find(a => (a.inviteCode || '').toUpperCase() === code);
+
+      if (!found) {
+        // Fallback: if no invite codes exist yet (legacy), allow direct access
+        if (assessments.length > 0 && !assessments.some(a => a.inviteCode)) {
+          // Legacy mode: show old list UI
+          studentName = name;
+          studentEmail = email;
+          showOldList();
+          return;
+        }
+        joinErrorMsg.textContent = 'Invalid or expired invite code. Please check with your faculty.';
+        joinError.classList.remove('hidden');
+        return;
+      }
+
+      studentName = name;
+      studentEmail = email;
+      selectAssessment(found);
+    });
+  }
+
+  // Legacy list render for assessments without invite codes
+  function showOldList() {
+    viewList.innerHTML = `
+      <div class="list-card glass-panel animate-fade-in">
+        <h2><i class="fa-solid fa-inbox" style="color:var(--accent-primary)"></i> Available Assessments</h2>
+        <p class="section-desc">Select an assessment below to begin.</p>
+        <div id="assessments-container" class="assessment-grid"></div>
+        <a href="student.html" class="btn btn-outline" style="margin-top:1rem;">
+          <i class="fa-solid fa-arrow-left"></i> Back
+        </a>
+      </div>`;
     const container = document.getElementById('assessments-container');
-    container.innerHTML = '';
-
-    if (assessments.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state" style="grid-column: 1/-1">
-          <i class="fa-solid fa-inbox"></i>
-          <p>No assessments published yet.</p>
-        </div>`;
-      return;
-    }
-
     assessments.forEach(item => {
       const card = document.createElement('div');
       card.className = 'assessment-item animate-fade-in';
@@ -106,8 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  loadAssessments();
-
   // ===========================================================
   // 2. SYSTEM CHECK SEQUENCE
   // ===========================================================
@@ -120,15 +180,17 @@ document.addEventListener('DOMContentLoaded', () => {
   async function runSystemCheckSequence() {
     syscheckNextBtn.disabled = true;
     
-    const cameraEl = document.getElementById('check-camera');
+    const cameraEl  = document.getElementById('check-camera');
+    const micEl     = document.getElementById('check-mic');
     const networkEl = document.getElementById('check-network');
-    const screenEl = document.getElementById('check-screen');
+    const screenEl  = document.getElementById('check-screen');
 
-    cameraEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
-    networkEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
-    screenEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
+    [cameraEl, micEl, networkEl, screenEl].forEach(el => {
+      if (el) el.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
+    });
 
     let cameraPassed = false;
+    let micPassed    = false;
     let networkPassed = false;
     let screenPassed = false;
 
@@ -145,6 +207,47 @@ document.addEventListener('DOMContentLoaded', () => {
       cameraEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Using Simulation Mode';
       cameraPassed = true; 
     }
+
+    // ---- Microphone + audio level bar ----
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioAnalyser = audioCtx.createAnalyser();
+      audioAnalyser.fftSize = 256;
+      const src = audioCtx.createMediaStreamSource(audioStream);
+      src.connect(audioAnalyser);
+
+      // Inject mini audio level bar into syscheck item
+      if (micEl) {
+        micEl.querySelector('.syscheck-status').className = 'syscheck-status success';
+        micEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-circle-check"></i> Microphone Active';
+        const meterWrap = document.createElement('div');
+        meterWrap.className = 'audio-meter-wrap';
+        const meterBar = document.createElement('div');
+        meterBar.className = 'audio-meter-bar';
+        meterBar.id = 'syscheck-audio-bar';
+        meterWrap.appendChild(meterBar);
+        micEl.appendChild(meterWrap);
+
+        // Animate level bar during syscheck
+        const drawMeter = () => {
+          const data = new Uint8Array(audioAnalyser.frequencyBinCount);
+          audioAnalyser.getByteFrequencyData(data);
+          const avg = data.reduce((a, b) => a + b, 0) / data.length;
+          meterBar.style.width = Math.min(100, avg * 2) + '%';
+          requestAnimationFrame(drawMeter);
+        };
+        drawMeter();
+      }
+      micPassed = true;
+    } catch (e) {
+      if (micEl) {
+        micEl.querySelector('.syscheck-status').className = 'syscheck-status warning';
+        micEl.querySelector('.syscheck-status').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> No Mic (Audio checks skipped)';
+      }
+      micPassed = true; // Don't block
+    }
+    checkAllPassed();
 
     setTimeout(() => {
       networkPassed = true;
@@ -168,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 800);
 
     function checkAllPassed() {
-      if (cameraPassed && networkPassed && screenPassed) {
+      if (cameraPassed && micPassed && networkPassed && screenPassed) {
         syscheckNextBtn.disabled = false;
       }
     }
@@ -195,6 +298,15 @@ document.addEventListener('DOMContentLoaded', () => {
       cameraStream.getTracks().forEach(track => track.stop());
       cameraStream = null;
     }
+    if (audioStream) {
+      audioStream.getTracks().forEach(track => track.stop());
+      audioStream = null;
+    }
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+    stopAudioSpike();
   }
 
   // ===========================================================
@@ -223,6 +335,31 @@ document.addEventListener('DOMContentLoaded', () => {
     renderQuestion(0);
     startTimer();
     initProctorFeed();
+    startAudioSpikeDetector();
+  }
+
+  // ===========================================================
+  // 4a. AUDIO SPIKE PROCTORING
+  // ===========================================================
+  let audioSpikeInterval = null;
+  const AUDIO_SPIKE_THRESHOLD = 50; // 0-128 scale
+
+  function startAudioSpikeDetector() {
+    if (!audioAnalyser) return;
+    audioSpikeInterval = setInterval(() => {
+      if (!isActive) return;
+      const data = new Uint8Array(audioAnalyser.frequencyBinCount);
+      audioAnalyser.getByteFrequencyData(data);
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+      if (avg > AUDIO_SPIKE_THRESHOLD) {
+        triggerFlag(`Audio Spike Detected (level: ${Math.round(avg)})`);
+      }
+    }, 3000); // check every 3 seconds
+  }
+
+  function stopAudioSpike() {
+    clearInterval(audioSpikeInterval);
+    audioSpikeInterval = null;
   }
 
   // ===========================================================
@@ -394,7 +531,15 @@ document.addEventListener('DOMContentLoaded', () => {
       scoreText = `${correct} / ${total} (${Math.round((correct / total) * 100)}%)`;
     }
 
-    if (window.DB) window.DB.saveSubmission({ title: currentAssessment.title, score: scoreText, violations: violationsLog });
+    if (window.DB) window.DB.saveSubmission({
+      studentName,
+      studentEmail,
+      title: currentAssessment.title,
+      score: scoreText,
+      violations: violationsLog,
+      submittedAt: new Date().toLocaleString()
+    });
+    stopAudioSpike();
     showView(viewResults);
     resultsScoreEl.textContent = scoreText;
     resultsSummaryEl.textContent = `Completed ${answered} / ${total} questions. ${flagCount} violations logged.`;
@@ -412,15 +557,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function triggerFlag(reason) {
     flagCount++;
-    violationsLog.push(`${new Date().toLocaleTimeString()} - ${reason}`);
-    flagCounterEl.textContent = `Flags: ${flagCount}`;
+    pendingViolationReason = reason;
+    violationsLog.push(`${new Date().toLocaleTimeString()} — ${reason}`);
+    flagCounterEl.textContent = `⚑ ${flagCount} Flag${flagCount > 1 ? 's' : ''}`;
     flagCounterEl.classList.remove('hidden');
     warningReasonEl.textContent = reason;
+    const remaining = MAX_FLAGS - flagCount;
+    if (flagsRemainingEl) {
+      flagsRemainingEl.textContent = remaining > 0
+        ? `${remaining} more violation${remaining > 1 ? 's' : ''} will result in automatic submission.`
+        : `This was your final warning. Auto-submitting...`;
+    }
+    const appealInput = document.getElementById('appeal-input');
+    if (appealInput) appealInput.value = '';
     warningModal.classList.remove('hidden');
-    if (flagCount >= MAX_FLAGS) setTimeout(submitAssessment, 2000);
+    if (flagCount >= MAX_FLAGS) setTimeout(submitAssessment, 2500);
   }
 
   if (resumeBtn) resumeBtn.addEventListener('click', () => {
+    // Capture appeal text and attach to the last violation
+    const appealInput = document.getElementById('appeal-input');
+    if (appealInput && appealInput.value.trim() && violationsLog.length > 0) {
+      violationsLog[violationsLog.length - 1] += ` | Appeal: ${appealInput.value.trim()}`;
+    }
     warningModal.classList.add('hidden');
     document.documentElement.requestFullscreen?.();
   });

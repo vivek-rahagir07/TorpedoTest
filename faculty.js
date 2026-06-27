@@ -364,6 +364,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ---- PUBLISH MCQ ----
+  const inviteBanner   = document.getElementById('invite-banner');
+  const inviteCodeText = document.getElementById('invite-code-text');
+  const copyCodeBtn    = document.getElementById('copy-invite-code-btn');
+  const copyLinkBtn    = document.getElementById('copy-invite-link-btn');
+
+  function showInviteBanner(assessment) {
+    if (!inviteBanner || !inviteCodeText) return;
+    inviteCodeText.textContent = assessment.inviteCode || '------';
+    inviteBanner.classList.remove('hidden');
+  }
+
+  if (copyCodeBtn) {
+    copyCodeBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(inviteCodeText.textContent);
+      window.Toast.show('Invite code copied to clipboard!');
+    });
+  }
+
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', () => {
+      const base = window.location.href.replace('faculty.html', 'student.html');
+      const link = `${base}?code=${inviteCodeText.textContent}`;
+      navigator.clipboard.writeText(link);
+      window.Toast.show('Student invite link copied!');
+    });
+  }
+
   if (publishMcqBtn) {
     publishMcqBtn.addEventListener('click', () => {
       const accepted = currentMcqData.filter(q => q.accepted);
@@ -372,8 +399,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const title = document.getElementById('mcq-title').value.trim() || 'MCQ Assessment';
-      window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
-      window.Toast.show(`"${title}" published with ${accepted.length} questions!`);
+      const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
+      // Get the saved assessment to show its invite code
+      const allAssessments = window.DB.getAssessments();
+      const savedAssessment = allAssessments.find(a => a.id === saved) || allAssessments[allAssessments.length - 1];
+      window.Toast.show(`"${title}" published! Code: ${savedAssessment.inviteCode}`);
+      showInviteBanner(savedAssessment);
       // Reset
       document.getElementById('mcq-title').value = '';
       uploadZone.classList.remove('hidden');
@@ -446,8 +477,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (questions.length === 0) { window.Toast.show('Add at least one question.', 'error'); return; }
 
-      window.DB.saveAssessment({ title, type: 'case', content, questions });
-      window.Toast.show(`"${title}" published with ${questions.length} questions!`);
+      const savedId = window.DB.saveAssessment({ title, type: 'case', content, questions });
+      const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
+      window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
+      showInviteBanner(savedA);
       // Reset
       document.getElementById('case-title').value = '';
       document.getElementById('case-content').value = '';
@@ -524,8 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (questions.length === 0) { window.Toast.show('Add at least one problem.', 'error'); return; }
 
-      window.DB.saveAssessment({ title, type: 'coding', questions });
-      window.Toast.show(`"${title}" published with ${questions.length} problem(s)!`);
+      const savedId = window.DB.saveAssessment({ title, type: 'coding', questions });
+      const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
+      window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
+      showInviteBanner(savedA);
       document.getElementById('coding-title-main').value = '';
       codingContainer.innerHTML = '';
       codingQCount = 0;
@@ -558,22 +593,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     submissions.forEach(sub => {
       const tr = document.createElement('tr');
-      
-      let flagStatusHtml = '';
-      if (sub.violations && sub.violations.length > 0) {
-        flagStatusHtml = `<span class="violation-tag"><i class="fa-solid fa-triangle-exclamation"></i> Flagged (${sub.violations.length})</span>`;
-      } else {
-        flagStatusHtml = `<span class="violation-tag-clean"><i class="fa-solid fa-circle-check"></i> Clean</span>`;
-      }
 
-      let timelineHtml = 'No violations.';
+      const nameHtml = `<strong>${sub.studentName || 'Student'}</strong>${sub.studentEmail ? `<br><span style="font-size:0.8rem;color:var(--text-secondary)">${sub.studentEmail}</span>` : ''}`;
+      
+      let flagStatusHtml = sub.violations && sub.violations.length > 0
+        ? `<span class="violation-tag"><i class="fa-solid fa-triangle-exclamation"></i> Flagged (${sub.violations.length})</span>`
+        : `<span class="violation-tag-clean"><i class="fa-solid fa-circle-check"></i> Clean</span>`;
+
+      let timelineHtml = '<span style="color:var(--text-secondary);font-size:0.85rem;">No violations.</span>';
       if (sub.violations && sub.violations.length > 0) {
-        timelineHtml = sub.violations.map(v => `<div style="font-size:0.8rem; color:var(--danger); margin-bottom:0.25rem;"><i class="fa-solid fa-circle-exclamation"></i> ${v}</div>`).join('');
+        timelineHtml = sub.violations.map(v => {
+          // Check if violation has an appeal appended
+          const parts = v.split(' | Appeal: ');
+          const flagText = parts[0];
+          const appealText = parts[1];
+          let html = `<div style="font-size:0.8rem; color:var(--danger); margin-bottom:0.3rem;"><i class="fa-solid fa-circle-exclamation"></i> ${flagText}</div>`;
+          if (appealText) {
+            html += `<div style="font-size:0.78rem; color:var(--warning); margin-left:1rem; margin-bottom:0.3rem;"><i class="fa-solid fa-comment"></i> Appeal: "${appealText}"</div>`;
+          }
+          return html;
+        }).join('');
       }
 
       tr.innerHTML = `
-        <td><strong>${sub.studentName || 'Student'}</strong></td>
-        <td>${sub.assessmentTitle || 'Untitled Assessment'}</td>
+        <td>${nameHtml}</td>
+        <td>${sub.assessmentTitle || 'Untitled'}</td>
         <td><strong style="color:var(--accent-primary)">${sub.score || 'N/A'}</strong></td>
         <td>${flagStatusHtml}</td>
         <td>${timelineHtml}</td>
@@ -588,13 +632,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (clearLogsBtn) {
     clearLogsBtn.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear all student submission logs? This cannot be undone.')) {
-        if (window.DB) {
-          window.DB.clearSubmissions();
-          loadSubmissionLogs();
-          window.Toast.show('All submission logs cleared successfully!');
-        }
+      if (confirm('Clear all submission logs? This cannot be undone.')) {
+        window.DB && window.DB.clearSubmissions();
+        loadSubmissionLogs();
+        window.Toast.show('All submission logs cleared!');
       }
+    });
+  }
+
+  // ---- CSV Export ----
+  const exportCsvBtn = document.getElementById('export-csv-btn');
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', () => {
+      const submissions = window.DB ? window.DB.getSubmissions() : [];
+      if (submissions.length === 0) {
+        window.Toast.show('No submissions to export.', 'error');
+        return;
+      }
+
+      const headers = ['Student Name', 'Email', 'Assessment', 'Score', 'Violations', 'Appeals', 'Submitted At'];
+      const rows = submissions.map(sub => {
+        const violations = (sub.violations || []).filter(v => !v.includes('| Appeal:')).join('; ');
+        const appeals = (sub.violations || [])
+          .filter(v => v.includes('| Appeal:'))
+          .map(v => v.split('| Appeal:')[1]?.trim())
+          .filter(Boolean)
+          .join('; ');
+        return [
+          sub.studentName || 'Student',
+          sub.studentEmail || '',
+          sub.assessmentTitle || '',
+          sub.score || '',
+          violations,
+          appeals,
+          sub.submittedAt || ''
+        ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `torpedo_submissions_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      window.Toast.show('CSV exported successfully!');
     });
   }
 
