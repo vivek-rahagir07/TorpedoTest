@@ -102,81 +102,169 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsArrayBuffer(file);
   }
 
-  // ---- PARSER ----
+  // =====================================================
+  // UNIVERSAL MCQ PARSER — handles virtually any format
+  // Strategies:
+  //   1. Line-by-line state machine (most reliable)
+  //   2. Fallback: inline regex splitting
+  // =====================================================
   function parseQuestionsFromText(rawText) {
-    // Normalize: collapse multiple spaces/newlines to a single space
-    let text = rawText.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').trim();
+    // Normalise line endings
+    let text = rawText
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      // pdf.js sometimes packs everything in one line — detect this
+      // by looking for consecutive question numbers and splitting on them
+      .replace(/(\d+[.)][\s])/g, '\n$1')   // 1. → newline before
+      .replace(/([A-D][.)][\s])/g, '\n$1') // A. / A) → newline before (keep letter)
+      .replace(/Correct\s+Answer/gi, '\nCorrect Answer') // ensure on new line
+      .replace(/Answer\s*:/gi, '\nAnswer:');
 
+    console.log('Normalised text:\n', text);
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const questions = [];
 
-    // Split text into question blocks by finding "1." "2." "1)" "Q1." etc.
-    // Strategy: split on question-number patterns, then parse each block
-    const blocks = splitIntoBlocks(text);
+    // State
+    let state = 'idle'; // 'idle' | 'question' | 'options'
+    let currentQ   = null;
+    let currentOpts = [];
+    let currentAns = -1;
+    let qBuffer    = [];
 
-    for (const block of blocks) {
-      const q = parseBlock(block);
-      if (q) questions.push(q);
+    const isQuestionStart = (line) =>
+      /^(?:Q\.?\s*)?\d+\s*[.)][\s]/i.test(line) || /^(?:Q\.?\s*)?\d+\s*[.)]$/.test(line);
+
+    const isOptionLine = (line) =>
+      /^\(?[A-Da-d]\s*[.)][\s]/i.test(line) || /^\(?[A-Da-d]\s*[.)]$/.test(line);
+
+    const isAnswerLine = (line) =>
+      /^(?:Correct\s+Answer|Answer)\s*[:\-]/i.test(line);
+
+    const extractOptionLetter = (line) => {
+      const m = line.match(/^\(?([A-Da-d])\s*[.)][\s]*(.*)/is);
+      return m ? { letter: m[1].toLowerCase(), text: m[2].trim() } : null;
+    };
+
+    const extractAnswerLetter = (line) => {
+      const m = line.match(/(?:Correct\s+Answer|Answer)\s*[:\-]?\s*\(?([A-Da-d])\b/i);
+      return m ? m[1].toLowerCase() : null;
+    };
+
+    const stripQNumber = (line) =>
+      line.replace(/^(?:Q\.?\s*)?\d+\s*[.)]\s*/, '').trim();
+
+    const finishQuestion = () => {
+      if (currentQ && currentOpts.length >= 2) {
+        questions.push({
+          q:        currentQ,
+          opts:     currentOpts,
+          ans:      currentAns >= 0 ? currentAns : 0,
+          accepted: true
+        });
+      }
+      currentQ    = null;
+      currentOpts = [];
+      currentAns  = -1;
+      qBuffer     = [];
+      state       = 'idle';
+    };
+
+    for (const line of lines) {
+      // ---- Answer line — can appear anywhere ----
+      if (isAnswerLine(line)) {
+        const letter = extractAnswerLetter(line);
+        if (letter) currentAns = 'abcd'.indexOf(letter);
+        // After answer, likely moving to next question soon
+        if (currentQ && currentOpts.length >= 2) {
+          // don't finish yet — might be an inline block, next Q start will flush
+        }
+        continue;
+      }
+
+      // ---- New question start ----
+      if (isQuestionStart(line)) {
+        finishQuestion(); // flush previous
+        state = 'question';
+        qBuffer = [stripQNumber(line)];
+        continue;
+      }
+
+      // ---- Option line ----
+      if (isOptionLine(line)) {
+        if (state === 'question') {
+          // Finalise question text from buffer
+          currentQ = qBuffer.join(' ').trim();
+          qBuffer  = [];
+          state    = 'options';
+        }
+        const opt = extractOptionLetter(line);
+        if (opt && opt.text.length > 0 && currentOpts.length < 4) {
+          currentOpts.push(opt.text);
+        }
+        continue;
+      }
+
+      // ---- Continuation of question text ----
+      if (state === 'question') {
+        qBuffer.push(line);
+        continue;
+      }
+
+      // ---- Continuation of last option (multi-word option) ----
+      if (state === 'options' && currentOpts.length > 0) {
+        // Only append if it doesn't look like a new standalone element
+        currentOpts[currentOpts.length - 1] += ' ' + line;
+        continue;
+      }
     }
+
+    finishQuestion(); // flush final question
+
+    // ---- FALLBACK: If state-machine got 0, try inline splitter ----
+    if (questions.length === 0) {
+      console.warn('State-machine got 0 questions — trying inline fallback parser');
+      return fallbackInlineParser(rawText);
+    }
+
     return questions;
   }
 
-  function splitIntoBlocks(text) {
-    // Match start of a new question: number followed by . or ) at start or after newline
-    const qStartRegex = /(?:^|\n)\s*(?:Q\.?\s*)?\d+\s*[.)]/g;
-    const positions = [];
-    let m;
-    while ((m = qStartRegex.exec(text)) !== null) {
-      positions.push(m.index + (m[0].startsWith('\n') ? 1 : 0));
+  // Fallback: treats the whole text as one long string and splits on numbers
+  function fallbackInlineParser(rawText) {
+    const text = rawText.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ');
+    const questions = [];
+    // Split on question-number boundaries
+    const parts = text.split(/(?=\b\d{1,3}\s*[.)][\s])/);
+
+    for (const part of parts) {
+      if (part.trim().length < 20) continue;
+      const clean = part.replace(/^\d+\s*[.)]\s*/, '').trim();
+
+      // Find where options start
+      const optIdx = clean.search(/\b[A-Da-d]\s*[.)]\s/);
+      if (optIdx < 5) continue;
+
+      const qText = clean.slice(0, optIdx).trim();
+      const optBlock = clean.slice(optIdx);
+
+      // Extract A B C D
+      const opts = [];
+      const optRx = /\b([A-Da-d])\s*[.)]\s*(.*?)(?=\b[A-Da-d]\s*[.)]|(?:Correct\s+)?Answer|$)/gi;
+      let om;
+      while ((om = optRx.exec(optBlock)) !== null) {
+        const t = om[2].trim();
+        if (t && !(/^(answer|correct)/i.test(t)) && opts.length < 4) opts.push(t);
+      }
+
+      const ansM = part.match(/(?:Correct\s+Answer|Answer)\s*[:\-]?\s*\(?([A-Da-d])\b/i);
+      const ansIndex = ansM ? 'abcd'.indexOf(ansM[1].toLowerCase()) : 0;
+
+      if (qText && opts.length >= 2) {
+        questions.push({ q: qText, opts, ans: ansIndex >= 0 ? ansIndex : 0, accepted: true });
+      }
     }
-
-    const blocks = [];
-    for (let i = 0; i < positions.length; i++) {
-      const start = positions[i];
-      const end   = positions[i + 1] ?? text.length;
-      blocks.push(text.slice(start, end).trim());
-    }
-    return blocks;
-  }
-
-  function parseBlock(block) {
-    if (block.length < 15) return null;
-
-    // Remove leading question number
-    let text = block.replace(/^(?:Q\.?\s*)?\d+\s*[.)]\s*/, '').trim();
-
-    // Find where options start: look for first A. or A) or (A)
-    const optStartRegex = /(?:^|\n|\s)\(?[A-Da-d]\s*[.)]\s/;
-    const optStartMatch = optStartRegex.exec(text);
-    if (!optStartMatch) return null;
-
-    const qText = text.slice(0, optStartMatch.index).trim();
-    if (qText.length < 5) return null;
-
-    const optionsBlock = text.slice(optStartMatch.index).trim();
-
-    // Extract each option
-    const optRegex = /(?:^|\n|\s)\(?([A-Da-d])\s*[.)]\s*(.*?)(?=(?:\n|\s)\(?[A-Da-d]\s*[.)]|\bAnswer|\bCorrect|$)/gis;
-    const opts = [];
-    let om;
-    while ((om = optRegex.exec(optionsBlock)) !== null) {
-      const optText = om[2].trim();
-      if (optText.length === 0) continue;
-      if (/^(answer|correct)/i.test(optText)) break;
-      if (opts.length >= 4) break;
-      opts.push(optText);
-    }
-
-    if (opts.length < 2) return null;
-
-    // Find correct answer
-    const answerMatch = block.match(/(?:Correct\s+Answer|Answer)\s*[:\-]?\s*\(?([A-Da-d])\b/i);
-    let ansIndex = -1;
-    if (answerMatch) {
-      const ch = answerMatch[1].toLowerCase();
-      ansIndex = 'abcd'.indexOf(ch);
-    }
-
-    return { q: qText, opts, ans: ansIndex >= 0 ? ansIndex : 0, accepted: true };
+    return questions;
   }
 
   // ---- RENDER ----

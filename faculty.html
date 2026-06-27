@@ -58,14 +58,54 @@
 
         <input type="text" id="mcq-title" class="assessment-title-input" placeholder="Assessment Title (e.g. Biology Quiz — Chapter 3)">
 
-        <div class="upload-zone" id="upload-zone">
-          <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-          <h3>Drag & Drop your PDF here</h3>
-          <p>Supports standard MCQ format with A. B. C. D. options and "Correct Answer:" line</p>
-          <input type="file" id="file-upload" accept=".pdf" hidden>
-          <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">
-            <i class="fa-solid fa-folder-open"></i> Browse PDF File
+        <!-- Input Mode Toggle -->
+        <div class="input-mode-tabs" id="input-mode-tabs">
+          <button class="mode-tab active" data-mode="pdf" id="tab-pdf">
+            <i class="fa-solid fa-file-pdf"></i> Upload PDF
           </button>
+          <button class="mode-tab" data-mode="paste" id="tab-paste">
+            <i class="fa-solid fa-paste"></i> Paste Questions
+          </button>
+        </div>
+
+        <!-- PDF Upload Zone -->
+        <div id="upload-zone-wrap">
+          <div class="upload-zone" id="upload-zone">
+            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+            <h3>Drag &amp; Drop your PDF here</h3>
+            <p>Supports standard MCQ format with A. B. C. D. options and "Correct Answer:" line</p>
+            <input type="file" id="file-upload" accept=".pdf" hidden>
+            <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">
+              <i class="fa-solid fa-folder-open"></i> Browse PDF File
+            </button>
+          </div>
+        </div>
+
+        <!-- Paste Text Zone -->
+        <div id="paste-zone-wrap" class="hidden">
+          <div class="paste-zone">
+            <div class="paste-zone-header">
+              <i class="fa-solid fa-paste" style="color:var(--accent-primary)"></i>
+              <span>Paste your questions below</span>
+            </div>
+            <p class="paste-hint">Accepts any standard MCQ format. Each question should have a number, options A–D, and optionally "Correct Answer: X".</p>
+            <textarea id="paste-input" class="form-control paste-textarea" rows="14" placeholder="1. What is the capital of Australia?
+A. Sydney
+B. Melbourne
+C. Canberra
+D. Perth
+Correct Answer: C
+
+2. Which planet is known as the Red Planet?
+A. Venus
+B. Mars
+C. Jupiter
+D. Mercury
+Correct Answer: B"></textarea>
+            <button class="btn btn-primary mt-2" id="parse-paste-btn" style="width:100%">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Extract Questions from Text
+            </button>
+          </div>
         </div>
 
         <div id="parsing-loader" class="hidden">
