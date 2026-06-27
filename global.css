@@ -48,6 +48,41 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before, body::after {
+  content: "";
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  opacity: 0.4;
+  animation: bgFloat 15s infinite alternate ease-in-out;
+}
+
+body::before {
+  width: 50vw;
+  height: 50vw;
+  background: var(--accent-primary);
+  top: -10vw;
+  left: -10vw;
+}
+
+body::after {
+  width: 40vw;
+  height: 40vw;
+  background: var(--success);
+  bottom: -10vw;
+  right: -10vw;
+  animation-delay: -5s;
+}
+
+@keyframes bgFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(5vw, 5vh) scale(1.1); }
+  100% { transform: translate(-5vw, 10vh) scale(0.9); }
 }
 
 /* Glassmorphism Utilities */
