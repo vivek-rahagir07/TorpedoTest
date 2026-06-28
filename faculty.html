@@ -80,6 +80,9 @@
           <button class="mode-tab" data-mode="paste" id="tab-paste">
             <i class="fa-solid fa-paste"></i> Paste Questions
           </button>
+          <button class="mode-tab" data-mode="csv" id="tab-csv">
+            <i class="fa-solid fa-file-csv"></i> Import CSV
+          </button>
         </div>
 
         <!-- PDF Upload Zone -->
@@ -122,6 +125,21 @@ Correct Answer: B"></textarea>
           </div>
         </div>
 
+        <!-- CSV Upload Zone -->
+        <div id="csv-zone-wrap" class="hidden">
+          <div class="paste-zone">
+            <div class="paste-zone-header">
+              <i class="fa-solid fa-file-csv" style="color:var(--accent-primary)"></i>
+              <span>Import Questions from CSV</span>
+            </div>
+            <p class="paste-hint">Upload a CSV file with columns: <code>Question, Option A, Option B, Option C, Option D, Correct Answer (A/B/C/D), Points, Negative</code>. The header row is optional.</p>
+            <input type="file" id="csv-file-upload" accept=".csv" hidden>
+            <button class="btn btn-primary mt-2" style="width:100%" onclick="document.getElementById('csv-file-upload').click()">
+              <i class="fa-solid fa-upload"></i> Browse CSV File
+            </button>
+          </div>
+        </div>
+
         <div id="parsing-loader" class="hidden">
           <div class="spinner"></div>
           <p>Extracting questions from your PDF...</p>
@@ -154,6 +172,10 @@ Correct Answer: B"></textarea>
                   <input type="checkbox" id="mcq-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
                   <label for="mcq-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
                 </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" id="mcq-allow-review" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                  <label for="mcq-allow-review" style="margin:0; cursor:pointer;">Allow Post-Exam Review</label>
+                </div>
               </div>
             </div>
 
@@ -179,6 +201,28 @@ Correct Answer: B"></textarea>
                 </div>
               </div>
               <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;"><i class="fa-solid fa-circle-info"></i> Leave start/end blank for an always-available assessment. Min. time prevents early submissions.</p>
+            </div>
+
+            <!-- Randomization -->
+            <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+              <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-shuffle"></i> Randomization</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="mcq-randomize" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                    <label for="mcq-randomize" style="margin:0; cursor:pointer;">Randomize Questions</label>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="mcq-shuffle-opts" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                    <label for="mcq-shuffle-opts" style="margin:0; cursor:pointer;">Shuffle Options (A/B/C/D)</label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Questions per Student</label>
+                  <input type="number" class="form-control" id="mcq-q-count" min="1" value="" placeholder="All (leave blank)">
+                </div>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;"><i class="fa-solid fa-circle-info"></i> Each student receives a unique subset with shuffled order. Leave count blank to use all questions.</p>
             </div>
           </div>
 
@@ -250,6 +294,10 @@ Correct Answer: B"></textarea>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="case-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
                 <label for="case-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="case-allow-review" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="case-allow-review" style="margin:0; cursor:pointer;">Allow Post-Exam Review</label>
               </div>
             </div>
           </div>
@@ -325,6 +373,10 @@ Correct Answer: B"></textarea>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <input type="checkbox" id="coding-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
                 <label for="coding-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="coding-allow-review" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="coding-allow-review" style="margin:0; cursor:pointer;">Allow Post-Exam Review</label>
               </div>
             </div>
           </div>

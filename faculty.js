@@ -33,27 +33,81 @@ document.addEventListener('DOMContentLoaded', () => {
   const qCountEl     = document.getElementById('q-count');
   const publishMcqBtn = document.getElementById('publish-mcq-btn');
 
-  // Input Mode Toggles
   const tabPdf = document.getElementById('tab-pdf');
   const tabPaste = document.getElementById('tab-paste');
+  const tabCsv = document.getElementById('tab-csv');
   const uploadZoneWrap = document.getElementById('upload-zone-wrap');
   const pasteZoneWrap = document.getElementById('paste-zone-wrap');
+  const csvZoneWrap = document.getElementById('csv-zone-wrap');
   const pasteInput = document.getElementById('paste-input');
   const parsePasteBtn = document.getElementById('parse-paste-btn');
+  const csvFileUpload = document.getElementById('csv-file-upload');
+
+  function activateTab(activeTab) {
+    [tabPdf, tabPaste, tabCsv].forEach(t => t.classList.remove('active'));
+    [uploadZoneWrap, pasteZoneWrap, csvZoneWrap].forEach(z => z.classList.add('hidden'));
+    activeTab.classList.add('active');
+  }
 
   tabPdf.addEventListener('click', () => {
-    tabPdf.classList.add('active');
-    tabPaste.classList.remove('active');
+    activateTab(tabPdf);
     uploadZoneWrap.classList.remove('hidden');
-    pasteZoneWrap.classList.add('hidden');
   });
 
   tabPaste.addEventListener('click', () => {
-    tabPaste.classList.add('active');
-    tabPdf.classList.remove('active');
+    activateTab(tabPaste);
     pasteZoneWrap.classList.remove('hidden');
-    uploadZoneWrap.classList.add('hidden');
   });
+
+  tabCsv.addEventListener('click', () => {
+    activateTab(tabCsv);
+    csvZoneWrap.classList.remove('hidden');
+  });
+
+  // ---- CSV Import ----
+  if (csvFileUpload) {
+    csvFileUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function() {
+        const parsed = parseCsvQuestions(this.result);
+        if (parsed.length > 0) {
+          renderParsedQuestions(parsed);
+          csvZoneWrap.classList.add('hidden');
+          extractedBox.classList.remove('hidden');
+          window.Toast.show(`✅ ${parsed.length} questions imported from CSV!`);
+        } else {
+          window.Toast.show('No questions found in CSV. Check the format.', 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  function parseCsvQuestions(csvText) {
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const questions = [];
+    for (const line of lines) {
+      // Simple CSV split (handles quoted fields)
+      const cols = line.match(/("[^"]*"|[^,]+)/g)?.map(c => c.replace(/^"|"$/g, '').trim()) || [];
+      if (cols.length < 5) continue;
+      // Skip header row
+      if (/^question$/i.test(cols[0]) || /^q\b/i.test(cols[0]) && /option/i.test(cols[1])) continue;
+      const q = cols[0];
+      const opts = [cols[1], cols[2], cols[3], cols[4]].filter(Boolean);
+      if (opts.length < 2 || !q) continue;
+      let ansIndex = -1;
+      if (cols[5]) {
+        const letter = cols[5].trim().toUpperCase();
+        ansIndex = 'ABCD'.indexOf(letter);
+      }
+      const points = parseFloat(cols[6]) || 1;
+      const negative = parseFloat(cols[7]) || 0;
+      questions.push({ q, opts, ans: ansIndex >= 0 ? ansIndex : -1, accepted: true, points, negative });
+    }
+    return questions;
+  }
 
   parsePasteBtn.addEventListener('click', () => {
     const rawText = pasteInput.value.trim();
@@ -331,9 +385,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mcq-content">
           <h4>Q${index + 1}. ${item.q}</h4>
           ${item.ans === -1 ? '<p style="color:var(--danger); font-size:0.8rem; margin-bottom:0.5rem; font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Please select the correct answer below</p>' : ''}
-          <div style="display:flex; gap:1rem; margin-bottom:0.75rem; align-items:center;">
-            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Points: </label><input type="number" class="q-points" value="1" min="0" step="1" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
-            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Negative penalty: </label><input type="number" class="q-negative" value="0" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+          <div style="display:flex; gap:1rem; margin-bottom:0.75rem; align-items:center; flex-wrap:wrap;">
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Points: </label><input type="number" class="q-points" value="${item.points || 1}" min="0" step="1" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Negative: </label><input type="number" class="q-negative" value="${item.negative || 0}" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Partial credit: </label><input type="number" class="q-partial" value="${item.partialCredit || 0}" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+          </div>
+          <div style="margin-bottom:0.75rem;">
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Media URL <span style="font-size:0.75rem;">(YouTube, Image, or Audio)</span>: </label><input type="url" class="q-media" value="${item.mediaUrl || ''}" placeholder="https://..." style="width:100%; max-width:400px; padding:4px 6px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary); font-size:0.85rem;"></div>
           </div>
           <ul class="mcq-options">${optsHtml}</ul>
         </div>
@@ -426,7 +484,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const node = itemNodes[idx];
           const points = parseFloat(node.querySelector('.q-points')?.value || 1);
           const negative = parseFloat(node.querySelector('.q-negative')?.value || 0);
-          accepted.push({ ...q, points, negative });
+          const partialCredit = parseFloat(node.querySelector('.q-partial')?.value || 0);
+          const mediaUrl = node.querySelector('.q-media')?.value.trim() || '';
+          accepted.push({ ...q, points, negative, partialCredit, mediaUrl });
         }
       });
 
@@ -447,10 +507,14 @@ document.addEventListener('DOMContentLoaded', () => {
         allowTab: document.getElementById('mcq-allow-tab')?.checked || false,
         allowPaste: document.getElementById('mcq-allow-paste')?.checked || false,
         publishResult: document.getElementById('mcq-publish-res')?.checked ?? true,
+        allowReview: document.getElementById('mcq-allow-review')?.checked || false,
         duration: parseInt(document.getElementById('mcq-duration')?.value) || 30,
         minTime: parseInt(document.getElementById('mcq-min-time')?.value) || 0,
         startTime: document.getElementById('mcq-start-time')?.value || '',
-        endTime: document.getElementById('mcq-end-time')?.value || ''
+        endTime: document.getElementById('mcq-end-time')?.value || '',
+        randomize: document.getElementById('mcq-randomize')?.checked || false,
+        shuffleOptions: document.getElementById('mcq-shuffle-opts')?.checked || false,
+        questionsPerStudent: parseInt(document.getElementById('mcq-q-count')?.value) || 0
       };
       const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted, settings });
       // Get the saved assessment to show its invite code
@@ -463,8 +527,10 @@ document.addEventListener('DOMContentLoaded', () => {
       uploadZone.classList.remove('hidden');
       uploadZoneWrap.classList.remove('hidden');
       pasteZoneWrap.classList.add('hidden');
+      csvZoneWrap.classList.add('hidden');
       tabPdf.classList.add('active');
       tabPaste.classList.remove('active');
+      tabCsv.classList.remove('active');
       extractedBox.classList.add('hidden');
       questionsList.innerHTML = '';
       currentMcqData = [];
@@ -535,6 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         allowTab: document.getElementById('case-allow-tab')?.checked || false,
         allowPaste: document.getElementById('case-allow-paste')?.checked || false,
         publishResult: document.getElementById('case-publish-res')?.checked ?? true,
+        allowReview: document.getElementById('case-allow-review')?.checked || false,
         duration: parseInt(document.getElementById('case-duration')?.value) || 45,
         minTime: parseInt(document.getElementById('case-min-time')?.value) || 0,
         startTime: document.getElementById('case-start-time')?.value || '',
@@ -625,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         allowTab: document.getElementById('coding-allow-tab')?.checked || false,
         allowPaste: document.getElementById('coding-allow-paste')?.checked || false,
         publishResult: document.getElementById('coding-publish-res')?.checked ?? true,
+        allowReview: document.getElementById('coding-allow-review')?.checked || false,
         duration: parseInt(document.getElementById('coding-duration')?.value) || 60,
         minTime: parseInt(document.getElementById('coding-min-time')?.value) || 0,
         startTime: document.getElementById('coding-start-time')?.value || '',
@@ -793,15 +861,40 @@ setInterval(() => {
   const currentImgs = Array.from(liveFeedGrid.querySelectorAll('.screen-stream-card'));
   
   if (currentImgs.length === 0 || currentImgs.length !== streams.length) {
-    liveFeedGrid.innerHTML = streams.map(s => `
+    liveFeedGrid.innerHTML = streams.map(s => {
+      const studentId = s.key.replace('torpedo_stream_', '');
+      return `
       <div class="screen-stream-card glass-panel" data-key="${s.key}" style="padding:0.5rem; display:flex; flex-direction:column; gap:0.5rem; animation:fadeIn 0.3s ease-out;">
         <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
           <strong>${s.name}</strong>
           <span style="color:var(--success); font-size:0.75rem;"><i class="fa-solid fa-circle fa-beat-fade"></i> Live</span>
         </div>
         <img src="${s.img}" id="img-${s.key}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; border:1px solid var(--glass-border); background:#000;">
+        <div style="display:flex; gap:0.5rem; margin-top:0.25rem;">
+          <button class="btn btn-outline btn-sm faculty-warn-btn" data-student="${studentId}" style="flex:1; font-size:0.75rem; padding:0.3rem;"><i class="fa-solid fa-triangle-exclamation"></i> Warn</button>
+          <button class="btn btn-danger btn-sm faculty-kick-btn" data-student="${studentId}" style="flex:1; font-size:0.75rem; padding:0.3rem;"><i class="fa-solid fa-ban"></i> Kick</button>
+        </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
+
+    // Wire up Warn/Kick buttons
+    liveFeedGrid.querySelectorAll('.faculty-warn-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sid = btn.dataset.student;
+        localStorage.setItem('torpedo_faculty_action_' + sid, JSON.stringify({ action: 'warn', message: 'Please keep your eyes on the screen.', ts: Date.now() }));
+        window.Toast.show('Warning sent to student!');
+      });
+    });
+    liveFeedGrid.querySelectorAll('.faculty-kick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sid = btn.dataset.student;
+        if (confirm('Terminate this student\'s exam? This cannot be undone.')) {
+          localStorage.setItem('torpedo_faculty_action_' + sid, JSON.stringify({ action: 'kick', ts: Date.now() }));
+          window.Toast.show('Student exam terminated!', 'error');
+        }
+      });
+    });
   } else {
     // Just update src to prevent reflow flicker
     streams.forEach(s => {

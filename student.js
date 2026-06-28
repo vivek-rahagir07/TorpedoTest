@@ -153,13 +153,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     publishedSubs.reverse().forEach(sub => {
+      const assessment = allAssessments.find(a => a.title === sub.title || a.assessmentTitle === sub.title);
+      const canReview = assessment?.settings?.allowReview;
+      
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid var(--glass-border)';
       
       tr.innerHTML = `
         <td style="padding: 0.75rem 0.5rem; font-weight: 500;">${sub.title || sub.assessmentTitle || 'Untitled'}</td>
         <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">${sub.submittedAt ? sub.submittedAt.split(',')[0] : 'N/A'}</td>
-        <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 700; color: var(--accent-primary);">${sub.score || 'Pending'}</td>
+        <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 700; color: var(--accent-primary);">
+          ${sub.score || 'Pending'}
+          ${canReview ? `<br><button class="btn btn-outline btn-sm mt-1" onclick='window.openReviewMode(${JSON.stringify(sub).replace(/'/g, "&apos;")}, ${JSON.stringify(assessment).replace(/'/g, "&apos;")})' style="font-size:0.7rem; padding:0.2rem 0.5rem;"><i class="fa-solid fa-magnifying-glass"></i> Review</button>` : ''}
+        </td>
       `;
       resultLogBody.appendChild(tr);
     });
@@ -420,6 +426,34 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // --- Question Randomization ---
+    if (settings.randomize && currentAssessment.type === 'mcq') {
+      let qs = [...currentAssessment.questions];
+      // Fisher-Yates shuffle questions
+      for (let i = qs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [qs[i], qs[j]] = [qs[j], qs[i]];
+      }
+      // Subset slicing
+      if (settings.questionsPerStudent > 0 && settings.questionsPerStudent < qs.length) {
+        qs = qs.slice(0, settings.questionsPerStudent);
+      }
+      // Shuffle options per question
+      if (settings.shuffleOptions) {
+        qs.forEach(q => {
+          let opts = [...q.opts];
+          let correctStr = opts[q.ans]; // remember the correct text
+          for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [opts[i], opts[j]] = [opts[j], opts[i]];
+          }
+          q.opts = opts;
+          q.ans = opts.indexOf(correctStr); // remap the correct index
+        });
+      }
+      currentAssessment.questions = qs;
+    }
+
     showView(viewPlayer);
     buildPalette();
     renderQuestion(0);
@@ -562,7 +596,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let html = '';
     if (currentAssessment.type === 'mcq') {
-      html = `<p class="q-text">${qData.q}</p><div class="options-grid">`;
+      html = `<p class="q-text">${qData.q}</p>`;
+      
+      // Rich Media Support
+      if (qData.mediaUrl) {
+        let mediaHtml = '';
+        const url = qData.mediaUrl.trim();
+        const lowerUrl = url.toLowerCase();
+        if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+          let vid = '';
+          if (lowerUrl.includes('v=')) vid = url.split('v=')[1].split('&')[0];
+          else if (lowerUrl.includes('youtu.be/')) vid = url.split('youtu.be/')[1].split('?')[0];
+          if (vid) mediaHtml = `<iframe class="q-media-embed" src="https://www.youtube.com/embed/${vid}" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; border-radius:var(--radius-md); border:1px solid var(--glass-border);"></iframe>`;
+        } else if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+          mediaHtml = `<img src="${url}" class="q-media-embed" style="max-width:100%; max-height:300px; border-radius:var(--radius-md); border:1px solid var(--glass-border); object-fit:contain;">`;
+        } else if (lowerUrl.match(/\.(mp3|wav|ogg)$/i)) {
+          mediaHtml = `<audio controls class="q-media-embed" src="${url}" style="width:100%; max-width:400px; margin:0 auto; display:block;"></audio>`;
+        } else {
+          mediaHtml = `<a href="${url}" target="_blank" class="btn btn-outline"><i class="fa-solid fa-external-link"></i> Open Attached Media</a>`;
+        }
+        if (mediaHtml) html += `<div style="margin-bottom:1.5rem; text-align:center; background:var(--glass-bg); padding:1rem; border-radius:var(--radius-md);">${mediaHtml}</div>`;
+      }
+      
+      html += `<div class="options-grid">`;
       qData.opts.forEach((opt, i) => {
         html += `<label class="option-label"><input type="radio" name="mcq_q" value="${i}"> <div class="option-marker">${optionLetters[i]}</div> <span>${opt}</span></label>`;
       });
@@ -578,16 +634,26 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     } else if (currentAssessment.type === 'coding') {
       html = `
-        <div class="coding-panel">
-          <div class="problem-title-badge"><h4>${qData.title}</h4></div>
-          <p class="q-text">${qData.desc}</p>
-          <div class="io-row">
-            <div class="io-box"><strong>Sample Input</strong><code id="sample-input-code">${qData.input || 'None'}</code></div>
-            <div class="io-box"><strong>Expected Output</strong><code id="expected-output-code">${qData.output || 'None'}</code></div>
+        <div class="coding-split-layout" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; min-height: 50vh;">
+          <div class="coding-left-pane">
+            <div class="problem-title-badge"><h4>${qData.title}</h4></div>
+            <p class="q-text">${qData.desc}</p>
+            <div class="io-row">
+              <div class="io-box"><strong>Sample Input</strong><code id="sample-input-code">${qData.input || 'None'}</code></div>
+              <div class="io-box"><strong>Expected Output</strong><code id="expected-output-code">${qData.output || 'None'}</code></div>
+            </div>
           </div>
-          <textarea class="code-editor" id="code-ans-input">${studentAnswers[index] || ''}</textarea>
-          <button class="btn btn-outline btn-sm mt-2" id="run-code-btn"><i class="fa-solid fa-play"></i> Run & Test</button>
-          <div class="terminal-output hidden" id="code-terminal"><pre id="terminal-stdout"></pre></div>
+          <div class="coding-right-pane" style="display:flex; flex-direction:column; gap:0.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <select id="code-lang-sel" class="form-control" style="width:150px; padding:0.25rem; font-size:0.85rem;">
+                <option value="javascript" ${!window.currentCodeLang || window.currentCodeLang === 'javascript' ? 'selected' : ''}>JavaScript (Node)</option>
+                <option value="python" ${window.currentCodeLang === 'python' ? 'selected' : ''}>Python</option>
+              </select>
+              <button class="btn btn-outline btn-sm" id="run-code-btn"><i class="fa-solid fa-play"></i> Run & Test</button>
+            </div>
+            <textarea class="code-editor" id="code-ans-input">${studentAnswers[index] || ''}</textarea>
+            <div class="terminal-output hidden" id="code-terminal"><pre id="terminal-stdout"></pre></div>
+          </div>
         </div>
       `;
     }
@@ -596,12 +662,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentAssessment.type === 'coding') {
       const editorEl = document.getElementById('code-ans-input');
       if (window.CodeMirror) {
+        window.currentCodeLang = window.currentCodeLang || "javascript";
         window.codeMirrorInstance = CodeMirror.fromTextArea(editorEl, {
-          mode: "javascript",
+          mode: window.currentCodeLang,
           theme: "dracula",
           lineNumbers: true,
-          indentUnit: 2,
-          tabSize: 2
+          matchBrackets: true,
+          indentUnit: 4
+        });
+        
+        const langSel = document.getElementById('code-lang-sel');
+        langSel.addEventListener('change', (e) => {
+          window.currentCodeLang = e.target.value;
+          window.codeMirrorInstance.setOption('mode', window.currentCodeLang);
         });
         window.codeMirrorInstance.setSize("100%", "300px");
         // add some inline CSS to fix border radius
@@ -696,8 +769,13 @@ document.addEventListener('DOMContentLoaded', () => {
         maxScore += p;
         
         if (studentAnswers[i] !== undefined) {
-          if (studentAnswers[i] === q.ans) scoreNum += p;
-          else penaltyNum += neg;
+          if (studentAnswers[i] === q.ans) {
+            scoreNum += p;
+          } else {
+            // Partial Credit
+            if (q.partialCredit > 0) scoreNum += q.partialCredit;
+            else penaltyNum += neg;
+          }
         }
       });
       
@@ -715,7 +793,9 @@ document.addEventListener('DOMContentLoaded', () => {
       title: currentAssessment.title,
       score: scoreText,
       violations: violationsLog,
-      submittedAt: new Date().toLocaleString()
+      submittedAt: new Date().toLocaleString(),
+      answers: studentAnswers,
+      assessment: currentAssessment
     });
     stopAudioSpike();
     showView(viewResults);
@@ -727,10 +807,18 @@ document.addEventListener('DOMContentLoaded', () => {
                        (published ? 'Your result has been logged.' : 'Result hidden pending faculty review.');
                        
     resultsSummaryEl.textContent = summaryMsg;
+    
     if (!published) {
       resultsScoreEl.style.display = 'none';
     } else {
       resultsScoreEl.style.display = 'block';
+    }
+    
+    const resultsReviewWrap = document.getElementById('results-review-wrap');
+    if (currentAssessment.settings?.allowReview && resultsReviewWrap) {
+      resultsReviewWrap.classList.remove('hidden');
+    } else if (resultsReviewWrap) {
+      resultsReviewWrap.classList.add('hidden');
     }
     
     populateResultLog();
@@ -847,5 +935,121 @@ document.addEventListener('DOMContentLoaded', () => {
     warningModal.classList.add('hidden');
     document.documentElement.requestFullscreen?.();
   });
+
+  // ===========================================================
+  // 11. FACULTY ACTIONS & POST-EXAM REVIEW
+  // ===========================================================
+  const facultyWarnModal = document.getElementById('faculty-warn-modal');
+  const facultyWarnMsg = document.getElementById('faculty-warn-message');
+  const facultyWarnOk = document.getElementById('faculty-warn-ok-btn');
+  
+  if (facultyWarnOk) {
+    facultyWarnOk.addEventListener('click', () => {
+      facultyWarnModal.classList.add('hidden');
+    });
+  }
+
+  window.addEventListener('storage', (e) => {
+    const keyPrefix = `torpedo_faculty_action_${studentEmail || studentName}`;
+    if (e.key === keyPrefix && e.newValue) {
+      const data = JSON.parse(e.newValue);
+      if (data.action === 'warn') {
+        if (facultyWarnMsg) facultyWarnMsg.textContent = data.message || 'Please keep your eyes on the screen.';
+        if (facultyWarnModal) facultyWarnModal.classList.remove('hidden');
+      } else if (data.action === 'kick') {
+        if (facultyWarnModal) facultyWarnModal.classList.add('hidden');
+        if (isActive) submitAssessment();
+        window.Toast.show('Your exam was terminated by faculty.', 'error', 10000);
+      }
+    }
+  });
+
+  // Review functionality
+  const viewReviewBtn = document.getElementById('view-review-btn');
+  const reviewBackBtn = document.getElementById('review-back-btn');
+  const viewReview = document.getElementById('view-review');
+
+  if (viewReviewBtn) {
+    viewReviewBtn.addEventListener('click', () => {
+      window.openReviewMode({ score: resultsScoreEl.textContent, answers: studentAnswers }, currentAssessment);
+    });
+  }
+  if (reviewBackBtn) {
+    reviewBackBtn.addEventListener('click', () => {
+      showView(viewDashboard);
+    });
+  }
+
+  window.openReviewMode = function(submission, assessment) {
+    if (!assessment || !submission) return;
+    showView(viewReview);
+    document.getElementById('review-title').textContent = assessment.title;
+    document.getElementById('review-score').textContent = `Final Score: ${submission.score}`;
+    
+    const container = document.getElementById('review-questions-container');
+    container.innerHTML = '';
+    const answers = submission.answers || {};
+    
+    assessment.questions.forEach((q, i) => {
+      const div = document.createElement('div');
+      div.className = 'glass-panel review-question animate-fade-in';
+      div.style.marginBottom = '1.5rem';
+      div.style.padding = '1.5rem';
+      div.style.animationDelay = `${i * 0.05}s`;
+      
+      let html = `<h4>Q${i+1}. ${q.q || q.title || ''}</h4>`;
+      
+      if (assessment.type === 'mcq') {
+        const userAns = answers[i];
+        const isCorrect = userAns === q.ans;
+        
+        if (q.mediaUrl) {
+          html += `<div style="margin-bottom:1rem;"><a href="${q.mediaUrl}" target="_blank" style="color:var(--accent-primary);"><i class="fa-solid fa-link"></i> Attached Media</a></div>`;
+        }
+        
+        html += `<div class="options-grid" style="margin-top:1rem; pointer-events:none; opacity: 0.9;">`;
+        q.opts.forEach((opt, optIdx) => {
+          let className = 'option-label';
+          let icon = '';
+          if (optIdx === q.ans) {
+            className += ' correct';
+            icon = '<i class="fa-solid fa-check" style="color:var(--success); margin-left:auto;"></i>';
+          } else if (optIdx === userAns) {
+            className += ' incorrect';
+            icon = '<i class="fa-solid fa-xmark" style="color:var(--danger); margin-left:auto;"></i>';
+          }
+          
+          html += `<div class="${className}" style="display:flex; align-items:center;">
+            <div class="option-marker">${String.fromCharCode(65 + optIdx)}</div> 
+            <span>${opt}</span>
+            ${icon}
+          </div>`;
+        });
+        html += `</div>`;
+        
+        if (isCorrect) {
+          html += `<div style="margin-top:1rem; color:var(--success); font-weight:600;"><i class="fa-solid fa-circle-check"></i> Correct (+${q.points || 1} points)</div>`;
+        } else if (userAns !== undefined) {
+          if (q.partialCredit > 0) {
+            html += `<div style="margin-top:1rem; color:var(--warning); font-weight:600;"><i class="fa-solid fa-circle-half-stroke"></i> Partially Correct (+${q.partialCredit} points)</div>`;
+          } else {
+            html += `<div style="margin-top:1rem; color:var(--danger); font-weight:600;"><i class="fa-solid fa-circle-xmark"></i> Incorrect (Penalty: -${q.negative || 0})</div>`;
+          }
+        } else {
+          html += `<div style="margin-top:1rem; color:var(--text-secondary); font-weight:600;"><i class="fa-solid fa-minus"></i> Skipped</div>`;
+        }
+        
+      } else if (assessment.type === 'case') {
+        html += `<p style="margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Your Answer:</p>`;
+        html += `<div style="padding:1rem; background:var(--glass-bg); border-radius:4px; white-space:pre-wrap; border: 1px solid var(--glass-border);">${answers[i] || '<em>No answer provided</em>'}</div>`;
+      } else if (assessment.type === 'coding') {
+        html += `<p style="margin-bottom:0.5rem; font-size:0.9rem; color:var(--text-secondary);">Your Code:</p>`;
+        html += `<pre style="padding:1rem; background:var(--glass-bg); border-radius:4px; font-family:monospace; overflow-x:auto; border: 1px solid var(--glass-border);">${answers[i] || '/* No code provided */'}</pre>`;
+      }
+      
+      div.innerHTML = html;
+      container.appendChild(div);
+    });
+  };
 
 });
