@@ -10,58 +10,58 @@
    ====================================================== */
 :root {
   /* --- Palette (Light) --- */
-  --bg-primary:    #f0f2ff;
-  --bg-secondary:  #ffffff;
-  --text-primary:  #0f1117;
-  --text-secondary:#5b6385;
+  --bg-primary:    #ffffff;
+  --bg-secondary:  #f8f9fa;
+  --text-primary:  #1e293b;
+  --text-secondary:#64748b;
 
-  --accent-primary:   #4f46e5;
-  --accent-secondary: #7c3aed;
-  --accent-tertiary:  #06b6d4;
-  --accent-glow:      rgba(79, 70, 229, 0.28);
-  --accent-glow-lg:   rgba(79, 70, 229, 0.5);
+  --accent-primary:   #0F2C59;
+  --accent-secondary: #1a4282;
+  --accent-tertiary:  #2558a8;
+  --accent-glow:      rgba(15, 44, 89, 0.08);
+  --accent-glow-lg:   rgba(15, 44, 89, 0.15);
 
-  --success:     #10b981;
-  --danger:      #ef4444;
-  --warning:     #f59e0b;
-  --success-bg:  rgba(16, 185, 129, 0.10);
-  --danger-bg:   rgba(239, 68, 68, 0.10);
-  --warning-bg:  rgba(245, 158, 11, 0.10);
+  --success:     #059669;
+  --danger:      #dc2626;
+  --warning:     #d97706;
+  --success-bg:  rgba(5, 150, 105, 0.10);
+  --danger-bg:   rgba(220, 38, 38, 0.10);
+  --warning-bg:  rgba(217, 119, 6, 0.10);
 
-  --glass-bg:         rgba(255, 255, 255, 0.60);
-  --glass-bg-strong:  rgba(255, 255, 255, 0.85);
-  --glass-border:     rgba(255, 255, 255, 0.80);
-  --glass-shadow:     0 8px 40px rgba(79, 70, 229, 0.10), 0 2px 12px rgba(0,0,0,0.06);
-  --glass-shadow-lg:  0 24px 80px rgba(79, 70, 229, 0.18), 0 4px 24px rgba(0,0,0,0.08);
+  --glass-bg:         rgba(255, 255, 255, 0.85);
+  --glass-bg-strong:  #ffffff;
+  --glass-border:     rgba(203, 213, 225, 0.6);
+  --glass-shadow:     0 4px 15px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.05);
+  --glass-shadow-lg:  0 10px 35px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.04);
 
-  --transition:      all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition:      all 0.2s ease;
+  --transition-slow: all 0.3s ease;
+  --transition-bounce: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
-  --radius-xl: 24px;
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --radius-xs: 5px;
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
 }
 
 [data-theme="dark"] {
-  --bg-primary:   #080b14;
-  --bg-secondary: #0f1421;
-  --text-primary: #e8ecff;
-  --text-secondary: #7b85b0;
+  --bg-primary:   #000000;
+  --bg-secondary: #0a0a0a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
 
-  --accent-primary:   #6d5ef5;
-  --accent-secondary: #9b79ff;
-  --accent-tertiary:  #22d3ee;
-  --accent-glow:      rgba(109, 94, 245, 0.35);
-  --accent-glow-lg:   rgba(109, 94, 245, 0.6);
+  --accent-primary:   #2558a8;
+  --accent-secondary: #3b73ca;
+  --accent-tertiary:  #538ced;
+  --accent-glow:      rgba(37, 88, 168, 0.15);
+  --accent-glow-lg:   rgba(37, 88, 168, 0.25);
 
-  --glass-bg:         rgba(15, 20, 35, 0.72);
-  --glass-bg-strong:  rgba(15, 20, 35, 0.94);
-  --glass-border:     rgba(255, 255, 255, 0.06);
-  --glass-shadow:     0 8px 40px rgba(0, 0, 0, 0.55), 0 2px 12px rgba(0,0,0,0.35);
-  --glass-shadow-lg:  0 24px 80px rgba(0, 0, 0, 0.7), 0 4px 24px rgba(0,0,0,0.5);
+  --glass-bg:         rgba(15, 21, 33, 0.85);
+  --glass-bg-strong:  #0f1521;
+  --glass-border:     rgba(255, 255, 255, 0.08);
+  --glass-shadow:     0 4px 15px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --glass-shadow-lg:  0 10px 35px rgba(0,0,0,0.5), 0 3px 10px rgba(0,0,0,0.4);
 }
 
 /* ======================================================
@@ -244,12 +244,12 @@ p { color: var(--text-secondary); line-height: 1.75; }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
   color: white;
-  box-shadow: 0 4px 18px var(--accent-glow), 0 1px 4px rgba(0,0,0,0.12);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 .btn-primary:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 10px 35px var(--accent-glow-lg), 0 2px 8px rgba(0,0,0,0.15);
-  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  filter: brightness(1.1);
 }
 .btn-primary:active { transform: translateY(-1px) scale(0.99); }
 
@@ -390,13 +390,7 @@ p { color: var(--text-secondary); line-height: 1.75; }
 
 .nav-brand i {
   font-size: 1.2rem;
-  filter: drop-shadow(0 0 8px var(--accent-glow));
-  animation: iconPulseGlow 3s ease-in-out infinite;
-}
-
-@keyframes iconPulseGlow {
-  0%, 100% { filter: drop-shadow(0 0 6px var(--accent-glow)); }
-  50%       { filter: drop-shadow(0 0 18px var(--accent-glow-lg)); }
+  /* Removed glow */
 }
 
 .nav-links { display: flex; align-items: center; gap: 1.5rem; }
@@ -633,10 +627,10 @@ p { color: var(--text-secondary); line-height: 1.75; }
 .gap-1 { gap: 0.4rem; }
 .gap-2 { gap: 0.75rem; }
 
-/* Glow decorators */
-.glow-primary { filter: drop-shadow(0 0 10px var(--accent-glow)); }
-.glow-success { filter: drop-shadow(0 0 10px rgba(16,185,129,0.4)); }
-.glow-danger  { filter: drop-shadow(0 0 10px rgba(239,68,68,0.4)); }
+/* Glow decorators removed */
+.glow-primary { filter: none; }
+.glow-success { filter: none; }
+.glow-danger  { filter: none; }
 
 /* ======================================================
    CODE FONT

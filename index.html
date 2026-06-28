@@ -16,6 +16,22 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    /* Subtle grid overlay for texture */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(var(--glass-border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+      background-size: 30px 30px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
     }
 
     /* ---- Navbar / Brand (Subtle) ---- */
@@ -35,7 +51,6 @@
     }
     .top-brand i {
       color: var(--accent-primary);
-      filter: drop-shadow(0 0 8px var(--accent-glow));
     }
 
     /* ---- Hero Layout ---- */
@@ -60,36 +75,26 @@
       margin: 0 auto;
       text-align: left;
       padding: 3.5rem;
-      border-radius: 32px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(40px) saturate(200%);
-      -webkit-backdrop-filter: blur(40px) saturate(200%);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 
-        0 30px 60px rgba(0, 0, 0, 0.12),
-        0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-        0 20px 80px var(--accent-glow-lg);
+      border-radius: 24px;
+      background: var(--glass-bg-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
       animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
       overflow: hidden;
+      color: var(--text-primary);
     }
 
     [data-theme="dark"] .instructions-card {
-      background: rgba(15, 20, 35, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 
-        0 30px 60px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-        0 20px 80px rgba(109, 94, 245, 0.25);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     }
 
-    /* Top glow accent line */
+    /* Top accent line */
     .instructions-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--accent-tertiary), var(--accent-primary), var(--accent-secondary));
-      box-shadow: 0 4px 20px var(--accent-glow-lg);
+      height: 6px;
+      background: #2563eb;
     }
 
     .instructions-header {
@@ -98,15 +103,16 @@
       gap: 1rem;
       margin-bottom: 2.5rem;
       padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--glass-border);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    
+    [data-theme="dark"] .instructions-header {
+      border-bottom-color: rgba(255, 255, 255, 0.1);
     }
     
     .instructions-header i {
       font-size: 2rem;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 4px 10px var(--accent-glow));
+      color: var(--accent-primary);
     }
 
     .instructions-header h2 {
@@ -153,39 +159,21 @@
       justify-content: center;
       gap: 0.75rem;
       width: 100%;
-      padding: 1.4rem;
-      font-size: 1.25rem;
+      padding: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 700;
-      border-radius: 16px;
-      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      border-radius: 12px;
+      background: #0F2C59;
       color: #ffffff;
       text-decoration: none;
-      box-shadow: 0 10px 30px var(--accent-glow-lg), 0 0 0 2px rgba(255,255,255,0.2) inset;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .btn-massive::after {
-      content: '';
-      position: absolute;
-      top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
-      transform: rotate(45deg);
-      transition: all 0.6s ease;
-      opacity: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: all 0.3s ease;
     }
 
     .btn-massive:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 20px 40px var(--accent-glow-lg), 0 0 0 2px rgba(255,255,255,0.3) inset;
-      letter-spacing: 0.02em;
-    }
-    
-    .btn-massive:hover::after {
-      left: 100%;
-      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      background: #1a4282;
     }
 
     /* ---- Stats Row ---- */
@@ -195,6 +183,7 @@
       gap: 4rem;
       margin-top: 4rem;
       animation: fadeInUp 0.8s ease-out 0.3s both;
+      color: var(--text-primary);
     }
 
     .stat-item {
@@ -202,16 +191,15 @@
       flex-direction: column;
       align-items: center;
       gap: 0.25rem;
+      position: relative;
+      z-index: 10;
     }
 
     .stat-num {
-      font-size: 2.25rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 2.5rem;
+      font-weight: 800;
       letter-spacing: -0.04em;
-      filter: drop-shadow(0 2px 10px var(--accent-glow));
+      color: var(--accent-primary);
     }
 
     .stat-label {
@@ -219,7 +207,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-secondary);
-      font-weight: 700;
+      font-weight: 600;
     }
 
     /* ---- Feature Marquee / Row ---- */
@@ -237,23 +225,20 @@
       align-items: center;
       gap: 0.6rem;
       background: var(--glass-bg);
-      backdrop-filter: blur(12px);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
       padding: 0.6rem 1.2rem;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--text-secondary);
-      transition: all 0.3s ease;
-      cursor: default;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      position: relative;
+      z-index: 10;
     }
     .feature-pill i { color: var(--accent-primary); font-size: 1rem; }
     .feature-pill:hover {
+      background: var(--bg-secondary);
       border-color: var(--accent-primary);
-      color: var(--accent-primary);
-      background: rgba(79,70,229,0.05);
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px var(--accent-glow);
     }
 
     /* ---- Footer ---- */
@@ -275,13 +260,13 @@
       text-decoration: none;
       padding: 0.5rem 1rem;
       border-radius: 99px;
-      transition: all 0.3s;
+      transition: all 0.2s ease;
       background: transparent;
     }
     .admin-link:hover {
       color: var(--text-primary);
       background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
+      border-color: var(--glass-border);
     }
 
     .theme-toggle {
@@ -319,13 +304,6 @@
 </head>
 <body>
 
-  <!-- Animated background -->
-  <div class="bg-canvas">
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-    <div class="bg-orb bg-orb-4"></div>
-  </div>
 
   <div class="top-brand">
     <i class="fa-solid fa-shield-halved"></i> Torpedo SkillCheck
@@ -341,19 +319,19 @@
       <ul class="instructions-list">
         <li>
           <i class="fa-solid fa-user-shield"></i>
-          <span><strong>Strict Proctoring:</strong> All assessments are monitored with AI-based audio and video proctoring to ensure integrity.</span>
+          <span><strong style="color: inherit;">Strict Proctoring:</strong> All assessments are monitored with AI-based audio and video proctoring to ensure integrity.</span>
         </li>
         <li>
           <i class="fa-solid fa-location-crosshairs"></i>
-          <span><strong>Environment:</strong> Ensure you are in a quiet, well-lit room with a stable internet connection before beginning.</span>
+          <span><strong style="color: inherit;">Environment:</strong> Ensure you are in a quiet, well-lit room with a stable internet connection before beginning.</span>
         </li>
         <li>
           <i class="fa-solid fa-ban"></i>
-          <span><strong>Anti-Cheat Measures:</strong> Switching tabs, exiting full-screen mode, or copying/pasting will result in automatic flags and potential termination.</span>
+          <span><strong style="color: inherit;">Anti-Cheat Measures:</strong> Switching tabs, exiting full-screen mode, or copying/pasting will result in automatic flags and potential termination.</span>
         </li>
         <li>
           <i class="fa-solid fa-key"></i>
-          <span><strong>Invite Code:</strong> You will need a valid Invite Code provided by your faculty instructor to join a live assessment session.</span>
+          <span><strong style="color: inherit;">Invite Code:</strong> You will need a valid Invite Code provided by your faculty instructor to join a live assessment session.</span>
         </li>
       </ul>
       <a href="student.html" class="btn-massive">
