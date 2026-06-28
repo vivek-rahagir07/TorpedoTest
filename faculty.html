@@ -141,18 +141,19 @@ Correct Answer: B"></textarea>
                   <option value="light">Light (No flags)</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label>Negative Marking</label>
-                <select class="form-control" id="mcq-negative">
-                  <option value="0">None</option>
-                  <option value="0.25">-0.25</option>
-                  <option value="0.5">-0.5</option>
-                  <option value="1">-1.0</option>
-                </select>
-              </div>
-              <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
-                <input type="checkbox" id="mcq-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
-                <label for="mcq-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" id="mcq-allow-tab" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                  <label for="mcq-allow-tab" style="margin:0; cursor:pointer;">Allow Tab Switching</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" id="mcq-allow-paste" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                  <label for="mcq-allow-paste" style="margin:0; cursor:pointer;">Allow Copy/Paste</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="checkbox" id="mcq-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                  <label for="mcq-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+                </div>
               </div>
             </div>
           </div>
@@ -213,15 +214,19 @@ Correct Answer: B"></textarea>
                 <option value="light">Light (No flags)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Negative Marking</label>
-              <select class="form-control" id="case-negative" disabled title="Not applicable for subjective case studies">
-                <option value="0">None</option>
-              </select>
-            </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
-              <input type="checkbox" id="case-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
-              <label for="case-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="case-allow-tab" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="case-allow-tab" style="margin:0; cursor:pointer;">Allow Tab Switching</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="case-allow-paste" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="case-allow-paste" style="margin:0; cursor:pointer;">Allow Copy/Paste</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="case-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="case-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
             </div>
           </div>
         </div>
@@ -260,15 +265,19 @@ Correct Answer: B"></textarea>
                 <option value="light">Light (No flags)</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Negative Marking</label>
-              <select class="form-control" id="coding-negative" disabled title="Not applicable for coding">
-                <option value="0">None</option>
-              </select>
-            </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
-              <input type="checkbox" id="coding-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
-              <label for="coding-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="coding-allow-tab" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="coding-allow-tab" style="margin:0; cursor:pointer;">Allow Tab Switching</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="coding-allow-paste" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="coding-allow-paste" style="margin:0; cursor:pointer;">Allow Copy/Paste</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="coding-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="coding-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
             </div>
           </div>
         </div>
@@ -285,17 +294,28 @@ Correct Answer: B"></textarea>
           <i class="fa-solid fa-satellite-dish" style="color: var(--danger); animation: pulse 2s infinite;"></i>
           <h2>Live Command Center</h2>
         </div>
-        <p class="section-desc">Monitor active student sessions in real-time. Live flags will appear here instantly across tabs.</p>
+        <p class="section-desc">Monitor active student sessions in real-time. Live screens and flags will appear here instantly.</p>
 
         <div class="live-feed-container glass-panel">
           <div class="live-feed-header">
-            <h3><i class="fa-solid fa-tower-broadcast"></i> Active Incidents</h3>
+            <h3><i class="fa-solid fa-video"></i> Active Student Screens</h3>
             <span class="live-pulse"></span>
+          </div>
+          <div class="live-grid" id="live-feed-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div class="empty-state" style="grid-column: 1 / -1;">
+              <i class="fa-solid fa-check-double" style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem; display:block;"></i>
+              No active students currently sharing their screen.
+            </div>
+          </div>
+        </div>
+
+        <div class="live-feed-container glass-panel" style="margin-top: 2rem;">
+          <div class="live-feed-header">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Live Incidents</h3>
           </div>
           <div class="live-feed-list" id="live-feed-list">
             <div class="empty-state">
-              <i class="fa-solid fa-check-double" style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem; display:block;"></i>
-              No active violations. Monitoring stream is active.
+              No active violations.
             </div>
           </div>
         </div>

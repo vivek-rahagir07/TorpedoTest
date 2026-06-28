@@ -331,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="mcq-content">
           <h4>Q${index + 1}. ${item.q}</h4>
           ${item.ans === -1 ? '<p style="color:var(--danger); font-size:0.8rem; margin-bottom:0.5rem; font-weight:600;"><i class="fa-solid fa-triangle-exclamation"></i> Please select the correct answer below</p>' : ''}
+          <div style="display:flex; gap:1rem; margin-bottom:0.75rem; align-items:center;">
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Points: </label><input type="number" class="q-points" value="1" min="0" step="1" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Negative penalty: </label><input type="number" class="q-negative" value="0" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+          </div>
           <ul class="mcq-options">${optsHtml}</ul>
         </div>
         <div class="mcq-actions">
@@ -414,7 +418,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (publishMcqBtn) {
     publishMcqBtn.addEventListener('click', () => {
-      const accepted = currentMcqData.filter(q => q.accepted);
+      const accepted = [];
+      const itemNodes = Array.from(questionsList.children);
+      
+      currentMcqData.forEach((q, idx) => {
+        if (q.accepted) {
+          const node = itemNodes[idx];
+          const points = parseFloat(node.querySelector('.q-points')?.value || 1);
+          const negative = parseFloat(node.querySelector('.q-negative')?.value || 0);
+          accepted.push({ ...q, points, negative });
+        }
+      });
+
       if (accepted.length === 0) {
         window.Toast.show('Accept at least one question first.', 'error');
         return;
@@ -429,7 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = document.getElementById('mcq-title').value.trim() || 'MCQ Assessment';
       const settings = {
         proctoring: document.getElementById('mcq-proctor')?.value || 'strict',
-        negativeMarking: parseFloat(document.getElementById('mcq-negative')?.value || '0'),
+        allowTab: document.getElementById('mcq-allow-tab')?.checked || false,
+        allowPaste: document.getElementById('mcq-allow-paste')?.checked || false,
         publishResult: document.getElementById('mcq-publish-res')?.checked ?? true
       };
       const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted, settings });
@@ -512,7 +528,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const settings = {
         proctoring: document.getElementById('case-proctor')?.value || 'strict',
-        negativeMarking: 0,
+        allowTab: document.getElementById('case-allow-tab')?.checked || false,
+        allowPaste: document.getElementById('case-allow-paste')?.checked || false,
         publishResult: document.getElementById('case-publish-res')?.checked ?? true
       };
       const savedId = window.DB.saveAssessment({ title, type: 'case', content, questions, settings });
@@ -597,7 +614,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const settings = {
         proctoring: document.getElementById('coding-proctor')?.value || 'strict',
-        negativeMarking: 0,
+        allowTab: document.getElementById('coding-allow-tab')?.checked || false,
+        allowPaste: document.getElementById('coding-allow-paste')?.checked || false,
         publishResult: document.getElementById('coding-publish-res')?.checked ?? true
       };
       const savedId = window.DB.saveAssessment({ title, type: 'coding', questions, settings });
@@ -730,6 +748,56 @@ document.addEventListener('DOMContentLoaded', () => {
 // 6. LIVE COMMAND CENTER (Cross-Tab Sync)
 // =====================================================
 const liveFeedList = document.getElementById('live-feed-list');
+const liveFeedGrid = document.getElementById('live-feed-grid');
+
+// Polling for video screen share frames in localStorage
+setInterval(() => {
+  if (!liveFeedGrid || document.querySelector('.assessment-section.active')?.id !== 'live-section') return;
+  
+  const streams = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('torpedo_stream_')) {
+      try {
+        const val = JSON.parse(localStorage.getItem(key));
+        if (Date.now() - val.ts < 10000) { // Only show active streams (< 10 seconds old)
+          streams.push({ key, ...val });
+        }
+      } catch(e){}
+    }
+  }
+
+  if (streams.length === 0) {
+    liveFeedGrid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <i class="fa-solid fa-check-double" style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem; display:block;"></i>
+        No active students currently sharing their screen.
+      </div>
+    `;
+    return;
+  }
+
+  // Check if we need to completely rebuild to avoid flickering or just update existing
+  const currentImgs = Array.from(liveFeedGrid.querySelectorAll('.screen-stream-card'));
+  
+  if (currentImgs.length === 0 || currentImgs.length !== streams.length) {
+    liveFeedGrid.innerHTML = streams.map(s => `
+      <div class="screen-stream-card glass-panel" data-key="${s.key}" style="padding:0.5rem; display:flex; flex-direction:column; gap:0.5rem; animation:fadeIn 0.3s ease-out;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
+          <strong>${s.name}</strong>
+          <span style="color:var(--success); font-size:0.75rem;"><i class="fa-solid fa-circle fa-beat-fade"></i> Live</span>
+        </div>
+        <img src="${s.img}" id="img-${s.key}" style="width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; border:1px solid var(--glass-border); background:#000;">
+      </div>
+    `).join('');
+  } else {
+    // Just update src to prevent reflow flicker
+    streams.forEach(s => {
+      const img = document.getElementById(`img-${s.key}`);
+      if (img) img.src = s.img;
+    });
+  }
+}, 2000);
 
 window.addEventListener('storage', (e) => {
   if (e.key === 'torpedo_live_event') {
@@ -737,7 +805,7 @@ window.addEventListener('storage', (e) => {
     const data = JSON.parse(e.newValue);
     
     // Remove empty state if present
-    const empty = liveFeedList.querySelector('.empty-state');
+    const empty = liveFeedList?.querySelector('.empty-state');
     if (empty) empty.remove();
     
     const div = document.createElement('div');
@@ -753,7 +821,7 @@ window.addEventListener('storage', (e) => {
       </div>
     `;
     
-    liveFeedList.prepend(div);
+    if (liveFeedList) liveFeedList.prepend(div);
     
     // Show toast for flags
     if (data.type === 'flag') {
@@ -761,7 +829,7 @@ window.addEventListener('storage', (e) => {
       
       // Flash the live section icon if not currently viewing it
       const liveNavIcon = document.querySelector('li[data-target="live-section"] i');
-      if (liveNavIcon && document.querySelector('.assessment-section.active').id !== 'live-section') {
+      if (liveNavIcon && document.querySelector('.assessment-section.active')?.id !== 'live-section') {
         liveNavIcon.classList.add('fa-beat-fade');
         setTimeout(() => liveNavIcon.classList.remove('fa-beat-fade'), 5000);
       }

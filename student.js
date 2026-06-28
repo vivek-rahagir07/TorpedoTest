@@ -71,6 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let studentName       = 'Student';
   let studentEmail      = '';
   let pendingViolationReason = '';
+  let screenStream      = null;
+  let screenCaptureInterval = null;
 
   // ---- Helper: Show View ----
   function showView(view) {
@@ -325,6 +327,14 @@ document.addEventListener('DOMContentLoaded', () => {
       audioCtx.close();
       audioCtx = null;
     }
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+      screenStream = null;
+    }
+    if (screenCaptureInterval) {
+      clearInterval(screenCaptureInterval);
+      screenCaptureInterval = null;
+    }
     stopAudioSpike();
   }
 
@@ -341,6 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let wakeLock = null;
 
   async function startAssessment() {
+    // Request Screen Share
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor' } });
+    } catch (e) {
+      window.Toast.show("Screen sharing is required to start the exam.", "error");
+      return; // Stop if they refuse
+    }
+
     isActive = true;
     flagCount = 0;
     studentAnswers = {};
@@ -357,6 +375,26 @@ document.addEventListener('DOMContentLoaded', () => {
     startTimer();
     initProctorFeed();
     startAudioSpikeDetector();
+
+    // Start Screen Capture Loop
+    const video = document.createElement('video');
+    video.srcObject = screenStream;
+    video.play();
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 180;
+    const ctx = canvas.getContext('2d');
+
+    screenCaptureInterval = setInterval(() => {
+      if (!isActive) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+      localStorage.setItem(`torpedo_stream_${studentEmail || studentName}`, JSON.stringify({
+        name: studentName,
+        img: dataUrl,
+        ts: Date.now()
+      }));
+    }, 2000);
 
     // Ultimate Lockdown: Prevent screen from sleeping
     try {
@@ -585,22 +623,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let scoreText = 'Submitted';
 
     if (currentAssessment.type === 'mcq') {
-      let correct = 0;
-      let wrong = 0;
+      let scoreNum = 0;
+      let penaltyNum = 0;
+      let maxScore = 0;
       currentAssessment.questions.forEach((q, i) => {
+        const p = q.points !== undefined ? q.points : 1;
+        const neg = q.negative !== undefined ? q.negative : 0;
+        maxScore += p;
+        
         if (studentAnswers[i] !== undefined) {
-          if (studentAnswers[i] === q.ans) correct++;
-          else wrong++;
+          if (studentAnswers[i] === q.ans) scoreNum += p;
+          else penaltyNum += neg;
         }
       });
       
-      const negativeVal = currentAssessment.settings?.negativeMarking || 0;
-      const penalty = wrong * negativeVal;
-      const finalScore = Math.max(0, correct - penalty);
+      const finalScore = Math.max(0, scoreNum - penaltyNum);
       
-      scoreText = `${finalScore} / ${total} (${Math.round((correct / total) * 100)}%)`;
-      if (penalty > 0) {
-        scoreText += ` [-${penalty} penalty]`;
+      scoreText = `${finalScore} / ${maxScore} (${Math.round((finalScore / maxScore) * 100)}%)`;
+      if (penaltyNum > 0) {
+        scoreText += ` [-${penaltyNum} penalty]`;
       }
     }
 
@@ -635,12 +676,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // 10. ANTI-CHEAT & ANTI-PLAGIARISM
   // ===========================================================
   document.addEventListener('fullscreenchange', handleFsChange);
-  document.addEventListener('visibilitychange', () => { if (isActive && document.hidden) triggerFlag('Tab Switch'); });
-  window.addEventListener('blur', () => { if (isActive) triggerFlag('Focus Lost'); });
+  document.addEventListener('visibilitychange', () => { 
+    if (isActive && document.hidden && !currentAssessment?.settings?.allowTab) {
+      triggerFlag('Tab Switch'); 
+    }
+  });
+  window.addEventListener('blur', () => { 
+    if (isActive && !currentAssessment?.settings?.allowTab) {
+      triggerFlag('Focus Lost'); 
+    }
+  });
 
   // Anti-Copy & Anti-Paste
   document.addEventListener('copy', (e) => {
-    if (isActive) {
+    if (isActive && !currentAssessment?.settings?.allowPaste) {
       e.preventDefault();
       triggerFlag('Attempted to Copy content');
       window.Toast.show('Copying is disabled during the assessment!', 'error');
@@ -648,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.addEventListener('paste', (e) => {
-    if (isActive) {
+    if (isActive && !currentAssessment?.settings?.allowPaste) {
       e.preventDefault();
       triggerFlag('Attempted to Paste content');
       window.Toast.show('Pasting is disabled during the assessment!', 'error');
