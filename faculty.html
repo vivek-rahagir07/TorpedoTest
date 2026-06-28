@@ -50,6 +50,9 @@
         <li class="nav-item" data-target="coding-section">
           <i class="fa-solid fa-code"></i> Coding
         </li>
+        <li class="nav-item" data-target="match-section">
+          <i class="fa-solid fa-puzzle-piece"></i> Matching
+        </li>
         <li class="nav-item" data-target="live-section">
           <i class="fa-solid fa-satellite-dish" style="color:var(--danger)"></i> Live Command Center
         </li>
@@ -409,6 +412,68 @@ Correct Answer: B"></textarea>
         <div class="action-buttons">
           <button class="btn btn-outline" id="add-coding-q-btn"><i class="fa-solid fa-plus"></i> Add Problem</button>
           <button class="btn btn-primary" id="publish-coding-btn"><i class="fa-solid fa-rocket"></i> Publish Assessment</button>
+        </div>
+      </div>
+
+      <!-- =================== MATCHING SECTION =================== -->
+      <div id="match-section" class="assessment-section">
+        <div class="section-header">
+          <i class="fa-solid fa-puzzle-piece"></i>
+          <h2>Matching Assessment</h2>
+        </div>
+        <p class="section-desc">Create drag-and-drop matching questions (e.g. Terms & Definitions).</p>
+
+        <div class="form-group">
+          <label>Assessment Title</label>
+          <input type="text" id="match-title-main" class="form-control" placeholder="e.g. History Terms — Chapter 1">
+        </div>
+
+        <div class="section-divider"><span><i class="fa-solid fa-layer-group"></i> Pairs</span></div>
+
+        <div id="match-pairs-container"></div>
+
+        <div class="assessment-settings glass-panel" style="margin: 2rem 0; padding: 1.5rem; text-align: left;">
+          <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-sliders"></i> Assessment Settings</h3>
+          <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+              <label>Proctoring Level</label>
+              <select id="match-proctor" class="form-control">
+                <option value="strict">Strict (AI + Tab Lock + Mic + Cam)</option>
+                <option value="moderate">Moderate (Tab Lock + Cam)</option>
+                <option value="lenient">Lenient (Log Activity Only)</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label style="margin-bottom:0.5rem; display:block;">Rules</label>
+              <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.9rem;">
+                <label style="margin:0; cursor:pointer;"><input type="checkbox" id="match-allow-tab"> Allow Tab Switching</label>
+                <label style="margin:0; cursor:pointer;"><input type="checkbox" id="match-publish-res" checked> Show Results to Student</label>
+                <label style="margin:0; cursor:pointer;"><input type="checkbox" id="match-allow-review"> Allow Post-Exam Review</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scheduling & Timing -->
+          <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+            <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-clock"></i> Scheduling &amp; Timing</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label>Exam Duration (minutes)</label>
+                <input type="number" class="form-control" id="match-duration" min="1" max="480" value="15" placeholder="e.g. 15">
+              </div>
+              <div class="form-group">
+                <label>Min. Time Before Submit (min)</label>
+                <input type="number" class="form-control" id="match-min-time" min="0" max="480" value="0" placeholder="0 = no restriction">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-outline" id="add-match-pair-btn"><i class="fa-solid fa-plus"></i> Add Pair</button>
+          <button class="btn btn-primary" id="publish-match-btn"><i class="fa-solid fa-rocket"></i> Publish Assessment</button>
         </div>
       </div>
 

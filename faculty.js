@@ -1,7 +1,5 @@
-/* =====================================================
-   FACULTY PORTAL — JS
-   Fully functional: PDF parsing, MCQ, Case, Coding
-   ===================================================== */
+/** FACULTY PORTAL — JS
+   Fully functional: PDF parsing, MCQ, Case, Coding */
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -389,6 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Points: </label><input type="number" class="q-points" value="${item.points || 1}" min="0" step="1" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
             <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Negative: </label><input type="number" class="q-negative" value="${item.negative || 0}" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
             <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Partial credit: </label><input type="number" class="q-partial" value="${item.partialCredit || 0}" min="0" step="0.25" style="width:50px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);"><label><i class="fa-solid fa-stopwatch"></i> Time (sec): </label><input type="number" class="q-timelimit" value="${item.timeLimit || 0}" min="0" step="5" placeholder="0=unlimited" style="width:60px; padding:2px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary);"></div>
           </div>
           <div style="margin-bottom:0.75rem;">
             <div style="font-size:0.85rem; color:var(--text-secondary);"><label>Media URL <span style="font-size:0.75rem;">(YouTube, Image, or Audio)</span>: </label><input type="url" class="q-media" value="${item.mediaUrl || ''}" placeholder="https://..." style="width:100%; max-width:400px; padding:4px 6px; border:1px solid var(--glass-border); border-radius:4px; background:var(--glass-bg); color:var(--text-primary); font-size:0.85rem;"></div>
@@ -486,7 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const negative = parseFloat(node.querySelector('.q-negative')?.value || 0);
           const partialCredit = parseFloat(node.querySelector('.q-partial')?.value || 0);
           const mediaUrl = node.querySelector('.q-media')?.value.trim() || '';
-          accepted.push({ ...q, points, negative, partialCredit, mediaUrl });
+          const timeLimit = parseInt(node.querySelector('.q-timelimit')?.value) || 0;
+          accepted.push({ ...q, points, negative, partialCredit, mediaUrl, timeLimit });
         }
       });
 
@@ -638,15 +638,26 @@ document.addEventListener('DOMContentLoaded', () => {
         <h4><i class="fa-solid fa-terminal"></i> Problem ${codingQCount}</h4>
         <button class="btn-remove-card" title="Remove"><i class="fa-solid fa-trash"></i></button>
       </div>
-      <div class="form-group">
-        <label>Problem Title</label>
-        <input type="text" class="form-control coding-prob-title" placeholder="e.g. Two Sum">
+      <div class="form-group" style="display:flex; gap:1rem;">
+        <div style="flex:1;">
+          <label>Problem Title</label>
+          <input type="text" class="form-control coding-prob-title" placeholder="e.g. Two Sum or Web App">
+        </div>
+        <div style="width:250px;">
+          <label>Problem Type</label>
+          <select class="form-control coding-prob-type">
+            <option value="algo">Standard Algorithm</option>
+            <option value="web">Web Project (HTML/CSS/JS)</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label>Problem Statement</label>
         <textarea class="form-control coding-prob-desc" rows="4" placeholder="Describe the problem, constraints, and examples..."></textarea>
       </div>
-      <div class="grid-2">
+      
+      <!-- Standard Algorithm Fields -->
+      <div class="grid-2 coding-algo-fields">
         <div class="form-group">
           <label>Sample Input</label>
           <textarea class="form-control code-font coding-prob-in" rows="3" placeholder="nums = [2,7,11,15]\ntarget = 9"></textarea>
@@ -656,8 +667,39 @@ document.addEventListener('DOMContentLoaded', () => {
           <textarea class="form-control code-font coding-prob-out" rows="3" placeholder="[0, 1]"></textarea>
         </div>
       </div>
+
+      <!-- Web Project Boilerplate Fields (Hidden by default) -->
+      <div class="coding-web-fields hidden">
+        <div class="form-group">
+          <label>HTML Boilerplate</label>
+          <textarea class="form-control code-font coding-prob-html" rows="3" placeholder="<h1>Hello World</h1>"></textarea>
+        </div>
+        <div class="form-group">
+          <label>CSS Boilerplate</label>
+          <textarea class="form-control code-font coding-prob-css" rows="3" placeholder="h1 { color: red; }"></textarea>
+        </div>
+        <div class="form-group">
+          <label>JS Boilerplate</label>
+          <textarea class="form-control code-font coding-prob-js" rows="3" placeholder="console.log('Started');"></textarea>
+        </div>
+      </div>
     `;
     codingContainer.appendChild(div);
+
+    // Toggle fields based on type
+    const typeSelect = div.querySelector('.coding-prob-type');
+    const algoFields = div.querySelector('.coding-algo-fields');
+    const webFields = div.querySelector('.coding-web-fields');
+    
+    typeSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'web') {
+        algoFields.classList.add('hidden');
+        webFields.classList.remove('hidden');
+      } else {
+        algoFields.classList.remove('hidden');
+        webFields.classList.add('hidden');
+      }
+    });
 
     div.querySelector('.btn-remove-card').addEventListener('click', () => {
       div.remove();
@@ -677,11 +719,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const title = document.getElementById('coding-title-main').value.trim() || 'Coding Assessment';
       const questions = [];
       codingContainer.querySelectorAll('.question-card').forEach(card => {
+        const type = card.querySelector('.coding-prob-type')?.value || 'algo';
         questions.push({
           title: card.querySelector('.coding-prob-title')?.value.trim() || 'Problem',
           desc:  card.querySelector('.coding-prob-desc')?.value.trim() || '',
+          probType: type,
           input: card.querySelector('.coding-prob-in')?.value.trim() || '',
-          output: card.querySelector('.coding-prob-out')?.value.trim() || ''
+          output: card.querySelector('.coding-prob-out')?.value.trim() || '',
+          htmlTemplate: card.querySelector('.coding-prob-html')?.value || '',
+          cssTemplate: card.querySelector('.coding-prob-css')?.value || '',
+          jsTemplate: card.querySelector('.coding-prob-js')?.value || ''
         });
       });
 
@@ -710,7 +757,88 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =====================================================
-  // 5. SUBMISSION LOGS DASHBOARD
+  // 5. MATCHING SECTION
+  // =====================================================
+  const matchContainer = document.getElementById('match-pairs-container');
+  const addMatchPairBtn = document.getElementById('add-match-pair-btn');
+  const publishMatchBtn = document.getElementById('publish-match-btn');
+  let matchPairCount = 0;
+
+  function addMatchPair() {
+    matchPairCount++;
+    const div = document.createElement('div');
+    div.className = 'question-card animate-fade-in';
+
+    div.innerHTML = `
+      <div class="question-card-header">
+        <h4><i class="fa-solid fa-link"></i> Pair ${matchPairCount}</h4>
+        <button class="btn-remove-card" title="Remove"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Left Item (e.g. Term)</label>
+          <input type="text" class="form-control match-prob-left" placeholder="e.g. Mitochondria">
+        </div>
+        <div class="form-group">
+          <label>Right Item (e.g. Definition)</label>
+          <input type="text" class="form-control match-prob-right" placeholder="e.g. Powerhouse of the cell">
+        </div>
+      </div>
+    `;
+    matchContainer.appendChild(div);
+
+    div.querySelector('.btn-remove-card').addEventListener('click', () => {
+      div.remove();
+      matchPairCount--;
+    });
+  }
+
+  if (matchContainer) {
+    // Initialize with 3 pairs
+    for(let i=0; i<3; i++) addMatchPair();
+  }
+
+  if (addMatchPairBtn) {
+    addMatchPairBtn.addEventListener('click', addMatchPair);
+  }
+
+  if (publishMatchBtn) {
+    publishMatchBtn.addEventListener('click', () => {
+      const title = document.getElementById('match-title-main').value.trim() || 'Matching Assessment';
+      const pairs = [];
+      matchContainer.querySelectorAll('.question-card').forEach(card => {
+        const left = card.querySelector('.match-prob-left')?.value.trim();
+        const right = card.querySelector('.match-prob-right')?.value.trim();
+        if (left && right) {
+          pairs.push({ left, right });
+        }
+      });
+
+      if (pairs.length < 2) { window.Toast.show('Add at least two valid pairs.', 'error'); return; }
+
+      const settings = {
+        proctoring: document.getElementById('match-proctor')?.value || 'strict',
+        allowTab: document.getElementById('match-allow-tab')?.checked || false,
+        publishResult: document.getElementById('match-publish-res')?.checked ?? true,
+        allowReview: document.getElementById('match-allow-review')?.checked || false,
+        duration: parseInt(document.getElementById('match-duration')?.value) || 15,
+        minTime: parseInt(document.getElementById('match-min-time')?.value) || 0,
+      };
+      
+      const savedId = window.DB.saveAssessment({ title, type: 'match', pairs, settings });
+      const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
+      window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
+      showInviteBanner(savedA);
+      
+      document.getElementById('match-title-main').value = '';
+      matchContainer.innerHTML = '';
+      matchPairCount = 0;
+      for(let i=0; i<3; i++) addMatchPair();
+    });
+  }
+
+  // =====================================================
+  // 6. SUBMISSION LOGS DASHBOARD
   // =====================================================
   const logsTableBody = document.getElementById('logs-table-body');
   const statsTotal    = document.getElementById('stats-total');
@@ -824,9 +952,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// =====================================================
-// 6. LIVE COMMAND CENTER (Cross-Tab Sync)
-// =====================================================
+// --- 6. LIVE COMMAND CENTER (Cross-Tab Sync) ---
 const liveFeedList = document.getElementById('live-feed-list');
 const liveFeedGrid = document.getElementById('live-feed-grid');
 

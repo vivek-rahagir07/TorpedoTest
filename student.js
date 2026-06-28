@@ -1,8 +1,6 @@
-/* =====================================================
-   STUDENT PORTAL — JS
+/** STUDENT PORTAL — JS
    Fully functional: proctoring, player, scoring, results,
-   pre-exam system check, camera feed, and JS runner sandbox.
-   ===================================================== */
+   pre-exam system check, camera feed, and JS runner sandbox. */
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -35,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn        = document.getElementById('submit-btn');
   const timerBadge       = document.getElementById('timer-badge');
   const timeLeftEl       = document.getElementById('time-left');
+  const qTimerBadge      = document.getElementById('q-timer-badge');
+  const qTimeLeftEl      = document.getElementById('q-time-left');
 
   // ---- Proctor PIP ----
   const proctorVideo     = document.getElementById('proctor-video');
@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let screenStream      = null;
   let screenCaptureInterval = null;
   let examStartedAt     = null;  // timestamp when exam began
+  let qTimerInterval    = null;  // per-question timer interval
+  let qSecondsLeft      = 0;     // per-question countdown
 
   // ---- Helper: Show View ----
   function showView(view) {
@@ -332,15 +334,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   syscheckNextBtn.addEventListener('click', () => {
-    const typeLabels = { mcq: 'MCQ Assessment', case: 'Case Based Assessment', coding: 'Coding Assessment' };
+    const typeLabels = { mcq: 'MCQ Assessment', case: 'Case Based Assessment', coding: 'Coding Assessment', match: 'Matching Assessment' };
     const settings = currentAssessment.settings || {};
     preTitleEl.textContent = currentAssessment.title;
     preTypeBadge.textContent = typeLabels[currentAssessment.type] || 'Assessment';
 
     // Build meta info including timing
-    const qCount = currentAssessment.questions.length;
-    const duration = settings.duration || Math.min(90, Math.max(10, qCount * 2));
-    let metaParts = [`${qCount} Question${qCount !== 1 ? 's' : ''}`, `${duration} Minutes`, 'Full Screen Required'];
+    const qCount = currentAssessment.type === 'match' 
+      ? (currentAssessment.pairs?.length || 0) + ' Pairs'
+      : (currentAssessment.questions?.length || 0) + ' Question' + ((currentAssessment.questions?.length || 0) !== 1 ? 's' : '');
+    const duration = settings.duration || Math.min(90, Math.max(10, (currentAssessment.questions?.length || 1) * 2));
+    let metaParts = [qCount, `${duration} Minutes`, 'Full Screen Required'];
     if (settings.minTime > 0) {
       metaParts.push(`Min. ${settings.minTime} min before submit`);
     }
@@ -381,6 +385,10 @@ document.addEventListener('DOMContentLoaded', () => {
       clearInterval(screenCaptureInterval);
       screenCaptureInterval = null;
     }
+    if (aiDetectionInterval) {
+      clearInterval(aiDetectionInterval);
+      aiDetectionInterval = null;
+    }
     stopAudioSpike();
   }
 
@@ -414,7 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
     flagCounterEl.classList.add('hidden');
 
     const settings = currentAssessment.settings || {};
-    const minutes = settings.duration || Math.min(90, Math.max(10, currentAssessment.questions.length * 2));
+    // For match type, create a synthetic single-question wrapper so navigation works
+    if (currentAssessment.type === 'match' && !currentAssessment.questions) {
+      currentAssessment.questions = [{ _matchPlaceholder: true }];
+    }
+    const minutes = settings.duration || Math.min(90, Math.max(10, (currentAssessment.questions?.length || 1) * 2));
     secondsLeft = minutes * 60;
 
     // If there's a hard deadline, cap the timer so it doesn't exceed the end time
@@ -514,21 +526,63 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===========================================================
-  // 4. LIVE PROCTOR FEED
+  // 4. LIVE PROCTOR FEED & AI PROCTORING
   // ===========================================================
-  function initProctorFeed() {
+  let aiModel = null;
+  let aiDetectionInterval = null;
+
+  async function initProctorFeed() {
     if (cameraStream) {
       proctorVideo.srcObject = cameraStream;
       proctorVideo.classList.remove('hidden');
       proctorSim.classList.add('hidden');
       proctorStatusTxt.textContent = 'Active';
       proctorStatusTxt.style.color = 'var(--success)';
+      
+      const proctorDetection = document.getElementById('proctor-detection');
+      if (window.cocoSsd && currentAssessment?.settings?.proctorLevel === 'strict') {
+        proctorDetection.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading AI...';
+        try {
+          aiModel = await cocoSsd.load();
+          proctorDetection.innerHTML = '<i class="fa-solid fa-robot" style="color:var(--accent-primary)"></i> AI Active';
+          startAiDetection();
+        } catch(e) {
+          proctorDetection.innerHTML = 'AI Load Failed';
+          console.error("AI Model Load Error:", e);
+        }
+      }
     } else {
       proctorVideo.classList.add('hidden');
       proctorSim.classList.remove('hidden');
       proctorStatusTxt.textContent = 'Simulated';
       proctorStatusTxt.style.color = 'var(--warning)';
     }
+  }
+
+  function startAiDetection() {
+    if (!aiModel) return;
+    aiDetectionInterval = setInterval(async () => {
+      if (!isActive) return;
+      try {
+        const predictions = await aiModel.detect(proctorVideo);
+        let personCount = 0;
+        let phoneDetected = false;
+        
+        predictions.forEach(p => {
+          if (p.class === 'person' && p.score > 0.5) personCount++;
+          if (p.class === 'cell phone' && p.score > 0.5) phoneDetected = true;
+        });
+        
+        if (phoneDetected) {
+          triggerFlag("Unauthorized device (Cell Phone) detected via AI");
+        }
+        if (personCount > 1) {
+          triggerFlag("Multiple people detected in frame via AI");
+        }
+      } catch (e) {
+        // ignore occasional frame drop errors
+      }
+    }, 2000);
   }
 
   // ===========================================================
@@ -553,7 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   function buildPalette() {
     qPaletteEl.innerHTML = '';
-    currentAssessment.questions.forEach((_, idx) => {
+    const items = currentAssessment.questions || [{ _placeholder: true }];
+    items.forEach((_, idx) => {
       const dot = document.createElement('div');
       dot.className = 'q-dot';
       dot.textContent = idx + 1;
@@ -578,8 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderQuestion(index) {
     saveCurrentAnswer();
     currentQIndex = index;
-    const qData = currentAssessment.questions[index];
-    const total  = currentAssessment.questions.length;
+    const questions = currentAssessment.questions || [{ _placeholder: true }];
+    const qData = questions[index] || {};
+    const total  = questions.length;
 
     questionTracker.textContent = `Question ${index + 1} of ${total}`;
     prevBtn.disabled = index === 0;
@@ -632,63 +688,337 @@ document.addEventListener('DOMContentLoaded', () => {
         <p class="q-text">${qData.q}</p>
         <textarea class="case-answer-box" id="case-ans-input" placeholder="Type your detailed answer here...">${studentAnswers[index] || ''}</textarea>
       `;
-    } else if (currentAssessment.type === 'coding') {
+    } else if (currentAssessment.type === 'match') {
       html = `
-        <div class="coding-split-layout" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; min-height: 50vh;">
-          <div class="coding-left-pane">
-            <div class="problem-title-badge"><h4>${qData.title}</h4></div>
-            <p class="q-text">${qData.desc}</p>
-            <div class="io-row">
-              <div class="io-box"><strong>Sample Input</strong><code id="sample-input-code">${qData.input || 'None'}</code></div>
-              <div class="io-box"><strong>Expected Output</strong><code id="expected-output-code">${qData.output || 'None'}</code></div>
-            </div>
+        <div class="match-container">
+          <p class="q-text" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-arrows-up-down-left-right"></i> Drag the items from the bank to match them with the correct terms.</p>
+          <div class="match-bank" id="match-bank" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:2rem; padding:1rem; background:var(--glass-bg); border-radius:var(--radius-md); min-height:60px; border: 1px dashed var(--glass-border);">
+            <!-- Draggable items will be populated via JS -->
           </div>
-          <div class="coding-right-pane" style="display:flex; flex-direction:column; gap:0.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <select id="code-lang-sel" class="form-control" style="width:150px; padding:0.25rem; font-size:0.85rem;">
-                <option value="javascript" ${!window.currentCodeLang || window.currentCodeLang === 'javascript' ? 'selected' : ''}>JavaScript (Node)</option>
-                <option value="python" ${window.currentCodeLang === 'python' ? 'selected' : ''}>Python</option>
-              </select>
-              <button class="btn btn-outline btn-sm" id="run-code-btn"><i class="fa-solid fa-play"></i> Run & Test</button>
-            </div>
-            <textarea class="code-editor" id="code-ans-input">${studentAnswers[index] || ''}</textarea>
-            <div class="terminal-output hidden" id="code-terminal"><pre id="terminal-stdout"></pre></div>
+          <div class="match-pairs" id="match-pairs" style="display:flex; flex-direction:column; gap:1rem;">
+            <!-- Drop zones will be populated via JS -->
           </div>
         </div>
       `;
+    } else if (currentAssessment.type === 'coding') {
+      if (qData.probType === 'web') {
+        html = `
+        <div class="coding-split-layout" style="display:grid; grid-template-columns: 220px 1fr 1fr; gap:1.5rem; min-height: 55vh;">
+          <!-- File Explorer -->
+          <div class="coding-left-pane glass-panel" style="padding:1rem;">
+            <h4 style="margin-bottom:1rem; font-size:1rem;">${qData.title}</h4>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;">${qData.desc}</p>
+            <div style="font-weight:600; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.5rem; color:var(--text-secondary);">Explorer</div>
+            <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:0.25rem;" id="web-file-list">
+              <li><button class="btn btn-outline btn-sm web-file-btn active" data-file="html" style="width:100%; text-align:left; border:none; padding:0.5rem;"><i class="fa-brands fa-html5" style="color:#e34f26; width:20px;"></i> index.html</button></li>
+              <li><button class="btn btn-outline btn-sm web-file-btn" data-file="css" style="width:100%; text-align:left; border:none; padding:0.5rem;"><i class="fa-brands fa-css3-alt" style="color:#264de4; width:20px;"></i> style.css</button></li>
+              <li><button class="btn btn-outline btn-sm web-file-btn" data-file="js" style="width:100%; text-align:left; border:none; padding:0.5rem;"><i class="fa-brands fa-js" style="color:#f7df1e; width:20px;"></i> script.js</button></li>
+            </ul>
+          </div>
+          <!-- IDE -->
+          <div class="coding-center-pane" style="display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:var(--glass-bg-strong); padding:0.5rem 1rem; border-radius:var(--radius-md) var(--radius-md) 0 0; border:1px solid var(--glass-border); border-bottom:none;">
+              <span style="font-family:monospace; font-size:0.85rem; font-weight:bold; color:var(--text-primary);" id="web-active-file-label">index.html</span>
+              <button class="btn btn-primary btn-sm" id="run-web-btn" style="padding:0.2rem 0.6rem; font-size:0.75rem;"><i class="fa-solid fa-play"></i> Run / Refresh</button>
+            </div>
+            <textarea class="code-editor" id="code-ans-input"></textarea>
+          </div>
+          <!-- Live Preview -->
+          <div class="coding-right-pane" style="display:flex; flex-direction:column; background:#fff; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--glass-border);">
+            <div style="background:#f1f1f1; padding:0.5rem; display:flex; gap:0.5rem; align-items:center; border-bottom:1px solid #ccc;">
+              <div style="display:flex; gap:4px;">
+                <div style="width:10px; height:10px; border-radius:50%; background:#ff5f56;"></div>
+                <div style="width:10px; height:10px; border-radius:50%; background:#ffbd2e;"></div>
+                <div style="width:10px; height:10px; border-radius:50%; background:#27c93f;"></div>
+              </div>
+              <div style="background:#fff; border-radius:4px; padding:2px 10px; font-size:0.75rem; color:#666; flex:1; font-family:monospace; border: 1px solid #ddd;">localhost:3000</div>
+            </div>
+            <iframe id="web-preview-frame" style="width:100%; height:100%; flex:1; border:none; background:#fff;"></iframe>
+          </div>
+        </div>
+        `;
+      } else {
+        html = `
+          <div class="coding-split-layout" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; min-height: 50vh;">
+            <div class="coding-left-pane">
+              <div class="problem-title-badge"><h4>${qData.title}</h4></div>
+              <p class="q-text">${qData.desc}</p>
+              <div class="io-row">
+                <div class="io-box"><strong>Sample Input</strong><code id="sample-input-code">${qData.input || 'None'}</code></div>
+                <div class="io-box"><strong>Expected Output</strong><code id="expected-output-code">${qData.output || 'None'}</code></div>
+              </div>
+            </div>
+            <div class="coding-right-pane" style="display:flex; flex-direction:column; gap:0.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <select id="code-lang-sel" class="form-control" style="width:150px; padding:0.25rem; font-size:0.85rem;">
+                  <option value="javascript" ${!window.currentCodeLang || window.currentCodeLang === 'javascript' ? 'selected' : ''}>JavaScript (Node)</option>
+                  <option value="python" ${window.currentCodeLang === 'python' ? 'selected' : ''}>Python</option>
+                </select>
+                <button class="btn btn-outline btn-sm" id="run-code-btn"><i class="fa-solid fa-play"></i> Run & Test</button>
+              </div>
+              <textarea class="code-editor" id="code-ans-input">${studentAnswers[index] || ''}</textarea>
+              <div class="terminal-output hidden" id="code-terminal"><pre id="terminal-stdout"></pre></div>
+            </div>
+          </div>
+        `;
+      }
     }
 
     dynamicQContent.innerHTML = html;
+    
+    if (currentAssessment.type === 'match') {
+      // Logic for Match Drag-and-Drop
+      const bank = document.getElementById('match-bank');
+      const pairs = document.getElementById('match-pairs');
+      
+      const savedMatches = studentAnswers[index] || {}; // leftIdx -> rightIdx
+      
+      // Initialize draggables state if not present (shuffle right items once)
+      if (!currentAssessment.matchState) {
+        let rightItems = currentAssessment.pairs.map((p, i) => ({ text: p.right, origIdx: i }));
+        // Simple shuffle
+        for (let i = rightItems.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [rightItems[i], rightItems[j]] = [rightItems[j], rightItems[i]];
+        }
+        currentAssessment.matchState = rightItems;
+      }
+
+      // Populate drop zones (Left items)
+      currentAssessment.pairs.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '1rem';
+        row.style.alignItems = 'stretch';
+        
+        const leftBox = document.createElement('div');
+        leftBox.className = 'glass-panel';
+        leftBox.style.flex = '1';
+        leftBox.style.padding = '1rem';
+        leftBox.style.display = 'flex';
+        leftBox.style.alignItems = 'center';
+        leftBox.style.fontWeight = 'bold';
+        leftBox.textContent = p.left;
+        
+        const dropZone = document.createElement('div');
+        dropZone.className = 'match-drop-zone';
+        dropZone.dataset.leftIdx = i;
+        dropZone.style.flex = '1';
+        dropZone.style.border = '2px dashed var(--glass-border)';
+        dropZone.style.borderRadius = 'var(--radius-md)';
+        dropZone.style.padding = '1rem';
+        dropZone.style.display = 'flex';
+        dropZone.style.alignItems = 'center';
+        dropZone.style.justifyContent = 'center';
+        dropZone.style.minHeight = '60px';
+        dropZone.style.background = 'rgba(255,255,255,0.05)';
+        dropZone.style.transition = 'all 0.2s';
+        
+        row.appendChild(leftBox);
+        row.appendChild(dropZone);
+        pairs.appendChild(row);
+        
+        // Setup drop events
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-primary)'; });
+        dropZone.addEventListener('dragleave', e => { dropZone.style.borderColor = 'var(--glass-border)'; });
+        dropZone.addEventListener('drop', e => {
+          e.preventDefault();
+          dropZone.style.borderColor = 'var(--glass-border)';
+          const rightIdx = e.dataTransfer.getData('text/plain');
+          if (rightIdx) {
+            // Move item from wherever it was to this drop zone
+            const el = document.querySelector(`.match-drag-item[data-right-idx="${rightIdx}"]`);
+            if (el) {
+              if (dropZone.children.length > 0) {
+                // Return existing item to bank
+                bank.appendChild(dropZone.children[0]);
+              }
+              dropZone.appendChild(el);
+              saveCurrentAnswer(); // update state immediately
+            }
+          }
+        });
+      });
+      
+      // Setup bank drop events
+      bank.addEventListener('dragover', e => { e.preventDefault(); });
+      bank.addEventListener('drop', e => {
+        e.preventDefault();
+        const rightIdx = e.dataTransfer.getData('text/plain');
+        if (rightIdx) {
+          const el = document.querySelector(`.match-drag-item[data-right-idx="${rightIdx}"]`);
+          if (el) {
+            bank.appendChild(el);
+            saveCurrentAnswer();
+          }
+        }
+      });
+
+      // Populate draggable items (Right items)
+      currentAssessment.matchState.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'match-drag-item btn btn-outline';
+        item.dataset.rightIdx = r.origIdx;
+        item.draggable = true;
+        item.textContent = r.text;
+        item.style.cursor = 'grab';
+        item.style.background = 'var(--glass-bg-strong)';
+        
+        item.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', r.origIdx);
+          item.style.opacity = '0.5';
+        });
+        item.addEventListener('dragend', e => {
+          item.style.opacity = '1';
+        });
+
+        // Check if it should be in a drop zone
+        let placed = false;
+        for (let leftIdx in savedMatches) {
+          if (savedMatches[leftIdx] == r.origIdx) {
+            const zone = document.querySelector(`.match-drop-zone[data-left-idx="${leftIdx}"]`);
+            if (zone) {
+              zone.appendChild(item);
+              placed = true;
+              break;
+            }
+          }
+        }
+        if (!placed) {
+          bank.appendChild(item);
+        }
+      });
+    }
+
     if (currentAssessment.type === 'coding') {
       const editorEl = document.getElementById('code-ans-input');
-      if (window.CodeMirror) {
-        window.currentCodeLang = window.currentCodeLang || "javascript";
-        window.codeMirrorInstance = CodeMirror.fromTextArea(editorEl, {
-          mode: window.currentCodeLang,
-          theme: "dracula",
-          lineNumbers: true,
-          matchBrackets: true,
-          indentUnit: 4
-        });
+      if (qData.probType === 'web') {
+        const defaultState = { html: qData.htmlTemplate || '', css: qData.cssTemplate || '', js: qData.jsTemplate || '', active: 'html' };
+        window.webProjectState = studentAnswers[index] || defaultState;
         
-        const langSel = document.getElementById('code-lang-sel');
-        langSel.addEventListener('change', (e) => {
-          window.currentCodeLang = e.target.value;
-          window.codeMirrorInstance.setOption('mode', window.currentCodeLang);
-        });
-        window.codeMirrorInstance.setSize("100%", "300px");
-        // add some inline CSS to fix border radius
-        window.codeMirrorInstance.getWrapperElement().style.borderRadius = "var(--radius-md)";
-        window.codeMirrorInstance.getWrapperElement().style.fontFamily = "'JetBrains Mono', monospace";
-        window.codeMirrorInstance.getWrapperElement().style.fontSize = "0.95rem";
+        if (window.CodeMirror) {
+          window.codeMirrorInstance = CodeMirror.fromTextArea(editorEl, {
+            mode: "xml",
+            theme: "dracula",
+            lineNumbers: true,
+            matchBrackets: true,
+            indentUnit: 4
+          });
+          window.codeMirrorInstance.setValue(window.webProjectState[window.webProjectState.active]);
+          window.codeMirrorInstance.setSize("100%", "300px");
+          window.codeMirrorInstance.getWrapperElement().style.fontFamily = "'JetBrains Mono', monospace";
+          window.codeMirrorInstance.getWrapperElement().style.fontSize = "0.95rem";
+          
+          const fileBtns = document.querySelectorAll('.web-file-btn');
+          fileBtns.forEach(btn => btn.addEventListener('click', (e) => {
+            window.webProjectState[window.webProjectState.active] = window.codeMirrorInstance.getValue();
+            fileBtns.forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            
+            const fileType = e.currentTarget.dataset.file;
+            window.webProjectState.active = fileType;
+            document.getElementById('web-active-file-label').textContent = fileType === 'html' ? 'index.html' : fileType === 'css' ? 'style.css' : 'script.js';
+            window.codeMirrorInstance.setOption('mode', fileType === 'html' ? 'xml' : fileType === 'css' ? 'css' : 'javascript');
+            window.codeMirrorInstance.setValue(window.webProjectState[fileType]);
+          }));
+          
+          document.getElementById('run-web-btn').addEventListener('click', () => {
+            window.webProjectState[window.webProjectState.active] = window.codeMirrorInstance.getValue();
+            const frame = document.getElementById('web-preview-frame');
+            const doc = frame.contentWindow.document;
+            doc.open();
+            doc.write(`
+              <html>
+              <head>
+                <style>${window.webProjectState.css}</style>
+              </head>
+              <body>
+                ${window.webProjectState.html}
+                <script>${window.webProjectState.js}</script>
+              </body>
+              </html>
+            `);
+            doc.close();
+          });
+          // initial run
+          document.getElementById('run-web-btn').click();
+        }
+      } else {
+        if (window.CodeMirror) {
+          window.currentCodeLang = window.currentCodeLang || "javascript";
+          window.codeMirrorInstance = CodeMirror.fromTextArea(editorEl, {
+            mode: window.currentCodeLang,
+            theme: "dracula",
+            lineNumbers: true,
+            matchBrackets: true,
+            indentUnit: 4
+          });
+          
+          const langSel = document.getElementById('code-lang-sel');
+          langSel.addEventListener('change', (e) => {
+            window.currentCodeLang = e.target.value;
+            window.codeMirrorInstance.setOption('mode', window.currentCodeLang);
+          });
+          window.codeMirrorInstance.setSize("100%", "300px");
+          window.codeMirrorInstance.getWrapperElement().style.borderRadius = "var(--radius-md)";
+          window.codeMirrorInstance.getWrapperElement().style.fontFamily = "'JetBrains Mono', monospace";
+          window.codeMirrorInstance.getWrapperElement().style.fontSize = "0.95rem";
+        }
+        document.getElementById('run-code-btn').addEventListener('click', runCodingSandbox);
       }
-      document.getElementById('run-code-btn').addEventListener('click', runCodingSandbox);
     }
     if (currentAssessment.type === 'mcq' && studentAnswers[index] !== undefined) {
       const radio = dynamicQContent.querySelector(`input[value="${studentAnswers[index]}"]`);
       if (radio) radio.checked = true;
     }
     updatePalette();
+    startQuestionTimer(qData);
+  }
+
+  function startQuestionTimer(qData) {
+    // Clear any existing per-question timer
+    if (qTimerInterval) {
+      clearInterval(qTimerInterval);
+      qTimerInterval = null;
+    }
+    
+    const limit = qData.timeLimit || 0;
+    if (limit <= 0) {
+      // No per-question limit — hide the badge
+      if (qTimerBadge) qTimerBadge.classList.add('hidden');
+      return;
+    }
+    
+    qSecondsLeft = limit;
+    if (qTimerBadge) qTimerBadge.classList.remove('hidden');
+    if (qTimeLeftEl) qTimeLeftEl.textContent = `${qSecondsLeft}s`;
+    
+    qTimerInterval = setInterval(() => {
+      qSecondsLeft--;
+      if (qTimeLeftEl) qTimeLeftEl.textContent = `${qSecondsLeft}s`;
+      
+      // Visual warning when low
+      if (qSecondsLeft <= 5 && qTimerBadge) {
+        qTimerBadge.style.animation = 'pulse 0.5s infinite';
+      }
+      
+      if (qSecondsLeft <= 0) {
+        clearInterval(qTimerInterval);
+        qTimerInterval = null;
+        if (qTimerBadge) qTimerBadge.style.animation = '';
+        
+        // Auto-advance to next question or submit
+        saveCurrentAnswer();
+        window.Toast.show('⏰ Time expired for this question! Auto-advancing.', 'warning');
+        
+        const total = currentAssessment.questions ? currentAssessment.questions.length : 1;
+        if (currentQIndex < total - 1) {
+          renderQuestion(currentQIndex + 1);
+        } else {
+          submitAssessment();
+        }
+      }
+    }, 1000);
   }
 
   function runCodingSandbox() {
@@ -712,9 +1042,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const s = dynamicQContent.querySelector('input[type="radio"]:checked');
       if (s) studentAnswers[currentQIndex] = parseInt(s.value);
     } else if (currentAssessment.type === 'coding') {
-      if (window.codeMirrorInstance) window.codeMirrorInstance.save();
-      const input = document.getElementById('code-ans-input');
-      if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
+      const qData = currentAssessment.questions[currentQIndex];
+      if (qData.probType === 'web') {
+        if (window.codeMirrorInstance && window.webProjectState) {
+          window.webProjectState[window.webProjectState.active] = window.codeMirrorInstance.getValue();
+          studentAnswers[currentQIndex] = window.webProjectState;
+        }
+      } else {
+        if (window.codeMirrorInstance) window.codeMirrorInstance.save();
+        const input = document.getElementById('code-ans-input');
+        if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
+      }
+    } else if (currentAssessment.type === 'match') {
+      const matchMap = {};
+      document.querySelectorAll('.match-drop-zone').forEach(zone => {
+        const leftIdx = zone.dataset.leftIdx;
+        if (zone.children.length > 0) {
+          const rightIdx = zone.children[0].dataset.rightIdx;
+          matchMap[leftIdx] = parseInt(rightIdx);
+        }
+      });
+      studentAnswers[currentQIndex] = matchMap;
     } else {
       const input = document.getElementById('case-ans-input');
       if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
@@ -726,7 +1074,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   if (prevBtn) prevBtn.addEventListener('click', () => { if (currentQIndex > 0) renderQuestion(currentQIndex - 1); });
   if (nextBtn) nextBtn.addEventListener('click', () => { 
-    if (currentQIndex < currentAssessment.questions.length - 1) renderQuestion(currentQIndex + 1); 
+    const total = (currentAssessment.questions || []).length;
+    if (currentQIndex < total - 1) renderQuestion(currentQIndex + 1); 
     else submitAssessment();
   });
   if (submitBtn) submitBtn.addEventListener('click', () => {
@@ -749,13 +1098,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   function submitAssessment() {
     clearInterval(timerInterval);
+    if (qTimerInterval) { clearInterval(qTimerInterval); qTimerInterval = null; }
     isActive = false;
     saveCurrentAnswer();
     stopCameraStream();
     try { document.exitFullscreen?.(); } catch (_) {}
     if (wakeLock) { wakeLock.release().then(() => wakeLock = null); }
 
-    const total = currentAssessment.questions.length;
+    const total = currentAssessment.questions ? currentAssessment.questions.length : (currentAssessment.pairs ? 1 : 1);
     const answered = Object.keys(studentAnswers).length;
     let scoreText = 'Submitted';
 
@@ -785,6 +1135,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (penaltyNum > 0) {
         scoreText += ` [-${penaltyNum} penalty]`;
       }
+    }
+    
+    if (currentAssessment.type === 'match') {
+      let correct = 0;
+      let totalPairs = currentAssessment.pairs.length;
+      if (studentAnswers[0]) {
+        for (let leftIdx in studentAnswers[0]) {
+          if (leftIdx == studentAnswers[0][leftIdx]) {
+            correct++;
+          }
+        }
+      }
+      scoreText = `${correct} / ${totalPairs} (${Math.round((correct / totalPairs) * 100)}%)`;
     }
 
     if (window.DB) window.DB.saveSubmission({
