@@ -275,24 +275,19 @@
     <h1 class="hero-title">Assess. Learn.<br>Succeed.</h1>
     <p class="hero-subtitle">A professional assessment platform with real-time AI proctoring, PDF parsing, case studies, and live coding challenges.</p>
 
-    <!-- Cards -->
-    <div class="portal-cards">
-      <a href="faculty.html" class="portal-card glass-panel" style="animation: fadeInUp 0.6s ease-out 0.3s both">
-        <div class="card-icon-wrap">
-          <i class="fa-solid fa-chalkboard-user card-icon"></i>
-        </div>
-        <h2 class="card-title">Faculty Portal</h2>
-        <p class="card-desc">Create MCQ, Case-Based, and Coding assessments. Upload PDFs, manage questions, generate invite codes, and review proctored submissions.</p>
-        <span class="card-arrow">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
-      </a>
-
-      <a href="student.html" class="portal-card glass-panel student-card" style="animation: fadeInUp 0.6s ease-out 0.42s both">
-        <div class="card-icon-wrap">
-          <i class="fa-solid fa-user-graduate card-icon"></i>
-        </div>
-        <h2 class="card-title">Student Portal</h2>
-        <p class="card-desc">Join with your invite code and attempt assessments in a secure, proctored full-screen environment with audio & webcam monitoring.</p>
-        <span class="card-arrow" style="color:var(--success)">Enter Portal <i class="fa-solid fa-arrow-right"></i></span>
+    <!-- Instructions & Action -->
+    <div class="glass-panel" style="text-align: left; padding: 2.5rem; max-width: 700px; margin: 0 auto; animation: fadeInUp 0.7s ease-out 0.35s both;">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; font-weight: 700; color: var(--accent-primary);">
+        <i class="fa-solid fa-clipboard-list"></i> General Exam Instructions
+      </h2>
+      <ul style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 2.5rem; padding-left: 1.2rem; font-size: 1.05rem;">
+        <li><strong>Strict Proctoring:</strong> All assessments are monitored with AI-based audio and video proctoring.</li>
+        <li><strong>Environment:</strong> Ensure you are in a quiet, well-lit room with a stable internet connection.</li>
+        <li><strong>Anti-Cheat measures:</strong> Switching tabs, exiting full-screen mode, or copying/pasting will result in automatic flags.</li>
+        <li><strong>Invite Code:</strong> You will need an Invite Code provided by your faculty to join a live assessment.</li>
+      </ul>
+      <a href="student.html" class="btn btn-primary" style="display: block; width: 100%; text-align: center; padding: 1rem; font-size: 1.15rem;">
+        Proceed to Student Login <i class="fa-solid fa-arrow-right"></i>
       </a>
     </div>
 
@@ -327,6 +322,12 @@
     </div>
   </div>
 
+  <!-- Footer Link for Faculty -->
+  <div style="text-align: center; margin-top: 2rem; padding-bottom: 2rem; animation: fadeInUp 0.7s ease-out 0.6s both; position: relative; z-index: 10;">
+    <a href="faculty.html" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none; opacity: 0.7; transition: opacity 0.3s;">
+      <i class="fa-solid fa-lock"></i> Faculty Administration Login
+    </a>
+  </div>
   <button class="theme-toggle" id="theme-toggle" title="Toggle Dark Mode">
     <i class="fa-solid fa-moon"></i>
   </button>

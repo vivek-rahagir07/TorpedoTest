@@ -7,7 +7,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // ---- Views ----
-  const viewList     = document.getElementById('view-list');
+  const viewLogin    = document.getElementById('view-login');
+  const viewDashboard= document.getElementById('view-dashboard');
   const viewSyscheck = document.getElementById('view-syscheck');
   const viewPre      = document.getElementById('view-pre');
   const viewPlayer   = document.getElementById('view-player');
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---- Helper: Show View ----
   function showView(view) {
-    [viewList, viewSyscheck, viewPre, viewPlayer, viewResults].forEach(v => v.classList.add('hidden'));
+    [viewLogin, viewDashboard, viewSyscheck, viewPre, viewPlayer, viewResults].forEach(v => v.classList.add('hidden'));
     view.classList.remove('hidden');
   }
 
@@ -81,33 +82,91 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. LOAD ASSESSMENTS
   // ===========================================================
   // ===========================================================
-  // 1. JOIN FORM — Invite Code Flow
+  // 1. LOGIN & DASHBOARD
   // ===========================================================
+  const loginBtn   = document.getElementById('login-btn');
+  const loginName  = document.getElementById('login-name');
+  const loginEmail = document.getElementById('login-email');
+  const loginError = document.getElementById('login-error');
+  const loginErrorMsg = document.getElementById('login-error-msg');
+
+  const dashboardName = document.getElementById('dashboard-name-display');
+  const resultLogBody = document.getElementById('result-log-body');
+  
   const joinBtn   = document.getElementById('join-btn');
   const joinCode  = document.getElementById('join-code');
-  const joinName  = document.getElementById('join-name');
-  const joinEmail = document.getElementById('join-email');
   const joinError = document.getElementById('join-error');
   const joinErrorMsg = document.getElementById('join-error-msg');
 
-  // Auto-fill from URL param ?code=XXXXXX
-  const urlCode = new URLSearchParams(window.location.search).get('code');
-  if (urlCode && joinCode) joinCode.value = urlCode.toUpperCase();
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      const name = loginName ? loginName.value.trim() : '';
+      const email = loginEmail ? loginEmail.value.trim() : '';
+
+      loginError.classList.add('hidden');
+
+      if (!name || !email) {
+        loginErrorMsg.textContent = 'Please enter your Full Name and Email.';
+        loginError.classList.remove('hidden');
+        return;
+      }
+
+      studentName = name;
+      studentEmail = email.toLowerCase();
+      
+      // Setup Dashboard
+      dashboardName.textContent = studentName.split(' ')[0];
+      populateResultLog();
+      showView(viewDashboard);
+      
+      // Auto-fill from URL param ?code=XXXXXX if present
+      const urlCode = new URLSearchParams(window.location.search).get('code');
+      if (urlCode && joinCode) joinCode.value = urlCode.toUpperCase();
+    });
+  }
+
+  function populateResultLog() {
+    if (!resultLogBody) return;
+    const submissions = window.DB ? window.DB.getSubmissions() : [];
+    const allAssessments = window.DB ? window.DB.getAssessments() : [];
+    
+    // Filter submissions for this student
+    const studentSubs = submissions.filter(s => (s.studentEmail || '').toLowerCase() === studentEmail);
+    
+    // Filter to only those where publishResult is true (default is true if not set)
+    const publishedSubs = studentSubs.filter(sub => {
+      const assessment = allAssessments.find(a => a.title === sub.title || a.assessmentTitle === sub.title);
+      if (assessment && assessment.settings && assessment.settings.publishResult === false) {
+        return false;
+      }
+      return true;
+    });
+
+    resultLogBody.innerHTML = '';
+
+    if (publishedSubs.length === 0) {
+      resultLogBody.innerHTML = `<tr><td colspan="3" style="padding: 1rem; text-align: center; color: var(--text-secondary);">No published results found.</td></tr>`;
+      return;
+    }
+
+    publishedSubs.reverse().forEach(sub => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--glass-border)';
+      
+      tr.innerHTML = `
+        <td style="padding: 0.75rem 0.5rem; font-weight: 500;">${sub.title || sub.assessmentTitle || 'Untitled'}</td>
+        <td style="padding: 0.75rem 0.5rem; color: var(--text-secondary); font-size: 0.85rem;">${sub.submittedAt ? sub.submittedAt.split(',')[0] : 'N/A'}</td>
+        <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 700; color: var(--accent-primary);">${sub.score || 'Pending'}</td>
+      `;
+      resultLogBody.appendChild(tr);
+    });
+  }
 
   if (joinBtn) {
     joinBtn.addEventListener('click', () => {
-      const name = joinName ? joinName.value.trim() : '';
-      const email = joinEmail ? joinEmail.value.trim() : '';
       const code = joinCode ? joinCode.value.trim().toUpperCase() : '';
-
       joinError.classList.add('hidden');
 
-      if (!name) {
-        joinErrorMsg.textContent = 'Please enter your full name.';
-        joinError.classList.remove('hidden');
-        joinName.focus();
-        return;
-      }
       if (!code || code.length < 4) {
         joinErrorMsg.textContent = 'Please enter a valid invite code.';
         joinError.classList.remove('hidden');
@@ -119,52 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const found = assessments.find(a => (a.inviteCode || '').toUpperCase() === code);
 
       if (!found) {
-        // Fallback: if no invite codes exist yet (legacy), allow direct access
-        if (assessments.length > 0 && !assessments.some(a => a.inviteCode)) {
-          // Legacy mode: show old list UI
-          studentName = name;
-          studentEmail = email;
-          showOldList();
-          return;
-        }
-        joinErrorMsg.textContent = 'Invalid or expired invite code. Please check with your faculty.';
+        joinErrorMsg.textContent = 'Invalid or expired invite code.';
         joinError.classList.remove('hidden');
         return;
       }
 
-      studentName = name;
-      studentEmail = email;
       selectAssessment(found);
-    });
-  }
-
-  // Legacy list render for assessments without invite codes
-  function showOldList() {
-    viewList.innerHTML = `
-      <div class="list-card glass-panel animate-fade-in">
-        <h2><i class="fa-solid fa-inbox" style="color:var(--accent-primary)"></i> Available Assessments</h2>
-        <p class="section-desc">Select an assessment below to begin.</p>
-        <div id="assessments-container" class="assessment-grid"></div>
-        <a href="student.html" class="btn btn-outline" style="margin-top:1rem;">
-          <i class="fa-solid fa-arrow-left"></i> Back
-        </a>
-      </div>`;
-    const container = document.getElementById('assessments-container');
-    assessments.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'assessment-item animate-fade-in';
-      const icons = { mcq: 'fa-list-check icon-mcq', case: 'fa-file-signature icon-case', coding: 'fa-code icon-coding' };
-      const typeLabels = { mcq: 'MCQ Based', case: 'Case Based', coding: 'Coding' };
-      card.innerHTML = `
-        <div class="assessment-item-icon ${icons[item.type].split(' ')[1]}">
-          <i class="fa-solid ${icons[item.type].split(' ')[0]}"></i>
-        </div>
-        <h3>${item.title}</h3>
-        <div class="meta">${typeLabels[item.type]} &bull; ${item.questions.length} Questions</div>
-        <div class="start-hint"><i class="fa-solid fa-play"></i> Click to Start</div>
-      `;
-      card.addEventListener('click', () => selectAssessment(item));
-      container.appendChild(card);
     });
   }
 
@@ -289,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backBtn.addEventListener('click', () => {
       stopCameraStream();
       currentAssessment = null;
-      showView(viewList);
+      showView(viewDashboard);
     });
   }
 
@@ -566,8 +585,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let scoreText = 'Submitted';
 
     if (currentAssessment.type === 'mcq') {
-      let correct = currentAssessment.questions.reduce((acc, q, i) => acc + (studentAnswers[i] === q.ans ? 1 : 0), 0);
-      scoreText = `${correct} / ${total} (${Math.round((correct / total) * 100)}%)`;
+      let correct = 0;
+      let wrong = 0;
+      currentAssessment.questions.forEach((q, i) => {
+        if (studentAnswers[i] !== undefined) {
+          if (studentAnswers[i] === q.ans) correct++;
+          else wrong++;
+        }
+      });
+      
+      const negativeVal = currentAssessment.settings?.negativeMarking || 0;
+      const penalty = wrong * negativeVal;
+      const finalScore = Math.max(0, correct - penalty);
+      
+      scoreText = `${finalScore} / ${total} (${Math.round((correct / total) * 100)}%)`;
+      if (penalty > 0) {
+        scoreText += ` [-${penalty} penalty]`;
+      }
     }
 
     if (window.DB) window.DB.saveSubmission({
@@ -581,8 +615,20 @@ document.addEventListener('DOMContentLoaded', () => {
     stopAudioSpike();
     showView(viewResults);
     resultsScoreEl.textContent = scoreText;
-    resultsSummaryEl.textContent = `Completed ${answered} / ${total} questions. ${flagCount} violations logged.`;
-    loadAssessments();
+    
+    // Read publish settings to tell user
+    const published = currentAssessment.settings?.publishResult !== false;
+    const summaryMsg = `Completed ${answered} / ${total} questions. ${flagCount} violations logged. ` + 
+                       (published ? 'Your result has been logged.' : 'Result hidden pending faculty review.');
+                       
+    resultsSummaryEl.textContent = summaryMsg;
+    if (!published) {
+      resultsScoreEl.style.display = 'none';
+    } else {
+      resultsScoreEl.style.display = 'block';
+    }
+    
+    populateResultLog();
   }
 
   // ===========================================================

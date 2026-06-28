@@ -130,6 +130,33 @@ Correct Answer: B"></textarea>
         <div id="extracted-questions" class="hidden">
           <h3><i class="fa-solid fa-eye"></i> Review Extracted Questions (<span id="q-count">0</span> found)</h3>
           <div class="questions-list" id="questions-list"></div>
+          <div class="assessment-settings glass-panel" style="margin: 2rem 0; padding: 1.5rem; text-align: left;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-sliders"></i> Assessment Settings</h3>
+            <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label>Proctoring Level</label>
+                <select class="form-control" id="mcq-proctor">
+                  <option value="strict">Strict (Camera, Audio, Tab)</option>
+                  <option value="moderate">Moderate (Tab only)</option>
+                  <option value="light">Light (No flags)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Negative Marking</label>
+                <select class="form-control" id="mcq-negative">
+                  <option value="0">None</option>
+                  <option value="0.25">-0.25</option>
+                  <option value="0.5">-0.5</option>
+                  <option value="1">-1.0</option>
+                </select>
+              </div>
+              <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
+                <input type="checkbox" id="mcq-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mcq-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
+            </div>
+          </div>
+
           <div class="publish-bar">
             <p>Only <strong>accepted</strong> questions will be published.</p>
             <button class="btn btn-primary" id="publish-mcq-btn">
@@ -175,6 +202,30 @@ Correct Answer: B"></textarea>
 
         <div id="case-questions-container"></div>
 
+        <div class="assessment-settings glass-panel" style="margin: 2rem 0; padding: 1.5rem; text-align: left;">
+          <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-sliders"></i> Assessment Settings</h3>
+          <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+              <label>Proctoring Level</label>
+              <select class="form-control" id="case-proctor">
+                <option value="strict">Strict (Camera, Audio, Tab)</option>
+                <option value="moderate">Moderate (Tab only)</option>
+                <option value="light">Light (No flags)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Negative Marking</label>
+              <select class="form-control" id="case-negative" disabled title="Not applicable for subjective case studies">
+                <option value="0">None</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
+              <input type="checkbox" id="case-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+              <label for="case-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+            </div>
+          </div>
+        </div>
+
         <div class="action-buttons">
           <button class="btn btn-outline" id="add-case-q-btn"><i class="fa-solid fa-plus"></i> Add Question</button>
           <button class="btn btn-primary" id="publish-case-btn"><i class="fa-solid fa-rocket"></i> Publish Assessment</button>
@@ -197,6 +248,30 @@ Correct Answer: B"></textarea>
         <div class="section-divider"><span><i class="fa-solid fa-terminal"></i> Problems</span></div>
 
         <div id="coding-questions-container"></div>
+
+        <div class="assessment-settings glass-panel" style="margin: 2rem 0; padding: 1.5rem; text-align: left;">
+          <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-sliders"></i> Assessment Settings</h3>
+          <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+              <label>Proctoring Level</label>
+              <select class="form-control" id="coding-proctor">
+                <option value="strict">Strict (Camera, Audio, Tab)</option>
+                <option value="moderate">Moderate (Tab only)</option>
+                <option value="light">Light (No flags)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Negative Marking</label>
+              <select class="form-control" id="coding-negative" disabled title="Not applicable for coding">
+                <option value="0">None</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; padding-top: 1.5rem;">
+              <input type="checkbox" id="coding-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+              <label for="coding-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+            </div>
+          </div>
+        </div>
 
         <div class="action-buttons">
           <button class="btn btn-outline" id="add-coding-q-btn"><i class="fa-solid fa-plus"></i> Add Problem</button>

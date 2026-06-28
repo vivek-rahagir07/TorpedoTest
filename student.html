@@ -37,35 +37,71 @@
     </div>
   </nav>
 
-  <!-- ======= VIEW 0: JOIN ASSESSMENT FORM ======= -->
-  <div class="student-wrapper" id="view-list">
+  <!-- ======= VIEW 0: LOGIN FORM ======= -->
+  <div class="student-wrapper" id="view-login">
     <div class="pre-card glass-panel animate-fade-in" style="max-width: 500px;">
       <div class="text-center" style="margin-bottom: 1.5rem;">
-        <i class="fa-solid fa-shield-halved" style="font-size:2.5rem; color:var(--accent-primary); display:block; margin-bottom:0.75rem;"></i>
-        <h2 style="font-size:1.5rem;">Join an Assessment</h2>
-        <p style="color:var(--text-secondary); font-size:0.9rem;">Enter your details and the invite code provided by your faculty.</p>
+        <i class="fa-solid fa-user-graduate" style="font-size:2.5rem; color:var(--accent-primary); display:block; margin-bottom:0.75rem;"></i>
+        <h2 style="font-size:1.5rem;">Student Login</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem;">Sign in to access your dashboard and assessments.</p>
       </div>
 
       <div class="form-group">
         <label>Your Full Name <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="join-name" class="form-control" placeholder="e.g. Ravi Sharma" autocomplete="name">
+        <input type="text" id="login-name" class="form-control" placeholder="e.g. Ravi Sharma" autocomplete="name">
       </div>
       <div class="form-group">
-        <label>Email / Student ID</label>
-        <input type="email" id="join-email" class="form-control" placeholder="e.g. ravi@college.edu" autocomplete="email">
+        <label>Email / Student ID <span style="color:var(--danger)">*</span></label>
+        <input type="email" id="login-email" class="form-control" placeholder="e.g. ravi@college.edu" autocomplete="email">
       </div>
-      <div class="form-group">
-        <label>Assessment Invite Code <span style="color:var(--danger)">*</span></label>
-        <input type="text" id="join-code" class="form-control join-code-input" placeholder="e.g. TRP8A4" maxlength="6" autocomplete="off" style="letter-spacing: 0.2em; text-transform: uppercase; font-family: monospace; font-size: 1.2rem;">
-      </div>
-      <div id="join-error" class="join-error hidden"><i class="fa-solid fa-circle-xmark"></i> <span id="join-error-msg">Invalid code.</span></div>
+      <div id="login-error" class="join-error hidden"><i class="fa-solid fa-circle-xmark"></i> <span id="login-error-msg">Error</span></div>
 
-      <button class="btn btn-primary btn-block mt-2" id="join-btn">
-        <i class="fa-solid fa-door-open"></i> Join Assessment
+      <button class="btn btn-primary btn-block mt-2" id="login-btn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Login to Dashboard
       </button>
       <a href="index.html" class="btn btn-outline btn-block mt-2">
         <i class="fa-solid fa-arrow-left"></i> Back to Home
       </a>
+    </div>
+  </div>
+
+  <!-- ======= VIEW 0.5: STUDENT DASHBOARD ======= -->
+  <div class="student-wrapper hidden" id="view-dashboard" style="align-items: flex-start; padding-top: 4rem;">
+    <div style="width: 100%; max-width: 900px;">
+      <h2 style="margin-bottom: 1.5rem;">Welcome, <span id="dashboard-name-display" style="color: var(--accent-primary);">Student</span>!</h2>
+      
+      <div class="grid-2" style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+        <!-- Left: Join Assessment -->
+        <div class="pre-card glass-panel animate-fade-in" style="margin: 0; padding: 2rem;">
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-door-open"></i> Join Assessment</h3>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Enter the invite code provided by your faculty to begin an assessment.</p>
+          <div class="form-group">
+            <input type="text" id="join-code" class="form-control join-code-input" placeholder="e.g. TRP8A4" maxlength="6" autocomplete="off" style="letter-spacing: 0.2em; text-transform: uppercase; font-family: monospace; font-size: 1.2rem; text-align: center;">
+          </div>
+          <div id="join-error" class="join-error hidden"><i class="fa-solid fa-circle-xmark"></i> <span id="join-error-msg">Invalid code.</span></div>
+          <button class="btn btn-primary btn-block" id="join-btn">Join Now <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+
+        <!-- Right: Result Log -->
+        <div class="pre-card glass-panel animate-fade-in" style="margin: 0; padding: 2rem; display: flex; flex-direction: column;">
+          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-line"></i> Your Result Log</h3>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Past assessments with published results.</p>
+          <div style="flex-grow: 1; overflow-y: auto; max-height: 300px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary);">
+                  <th style="padding: 0.5rem; text-align: left;">Assessment</th>
+                  <th style="padding: 0.5rem; text-align: left;">Date</th>
+                  <th style="padding: 0.5rem; text-align: right;">Score</th>
+                </tr>
+              </thead>
+              <tbody id="result-log-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

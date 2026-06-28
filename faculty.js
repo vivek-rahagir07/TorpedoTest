@@ -427,7 +427,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       const title = document.getElementById('mcq-title').value.trim() || 'MCQ Assessment';
-      const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted });
+      const settings = {
+        proctoring: document.getElementById('mcq-proctor')?.value || 'strict',
+        negativeMarking: parseFloat(document.getElementById('mcq-negative')?.value || '0'),
+        publishResult: document.getElementById('mcq-publish-res')?.checked ?? true
+      };
+      const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted, settings });
       // Get the saved assessment to show its invite code
       const allAssessments = window.DB.getAssessments();
       const savedAssessment = allAssessments.find(a => a.id === saved) || allAssessments[allAssessments.length - 1];
@@ -505,7 +510,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (questions.length === 0) { window.Toast.show('Add at least one question.', 'error'); return; }
 
-      const savedId = window.DB.saveAssessment({ title, type: 'case', content, questions });
+      const settings = {
+        proctoring: document.getElementById('case-proctor')?.value || 'strict',
+        negativeMarking: 0,
+        publishResult: document.getElementById('case-publish-res')?.checked ?? true
+      };
+      const savedId = window.DB.saveAssessment({ title, type: 'case', content, questions, settings });
       const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
       window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
       showInviteBanner(savedA);
@@ -585,7 +595,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (questions.length === 0) { window.Toast.show('Add at least one problem.', 'error'); return; }
 
-      const savedId = window.DB.saveAssessment({ title, type: 'coding', questions });
+      const settings = {
+        proctoring: document.getElementById('coding-proctor')?.value || 'strict',
+        negativeMarking: 0,
+        publishResult: document.getElementById('coding-publish-res')?.checked ?? true
+      };
+      const savedId = window.DB.saveAssessment({ title, type: 'coding', questions, settings });
       const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
       window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
       showInviteBanner(savedA);
