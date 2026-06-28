@@ -156,6 +156,30 @@ Correct Answer: B"></textarea>
                 </div>
               </div>
             </div>
+
+            <!-- Scheduling & Timing -->
+            <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+              <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-clock"></i> Scheduling &amp; Timing</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                  <label>Exam Duration (minutes)</label>
+                  <input type="number" class="form-control" id="mcq-duration" min="1" max="480" value="30" placeholder="e.g. 30">
+                </div>
+                <div class="form-group">
+                  <label>Min. Time Before Submit (min)</label>
+                  <input type="number" class="form-control" id="mcq-min-time" min="0" max="480" value="0" placeholder="0 = no restriction">
+                </div>
+                <div class="form-group">
+                  <label>Scheduled Start</label>
+                  <input type="datetime-local" class="form-control" id="mcq-start-time">
+                </div>
+                <div class="form-group">
+                  <label>Scheduled End (Deadline)</label>
+                  <input type="datetime-local" class="form-control" id="mcq-end-time">
+                </div>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;"><i class="fa-solid fa-circle-info"></i> Leave start/end blank for an always-available assessment. Min. time prevents early submissions.</p>
+            </div>
           </div>
 
           <div class="publish-bar">
@@ -229,6 +253,30 @@ Correct Answer: B"></textarea>
               </div>
             </div>
           </div>
+
+          <!-- Scheduling & Timing -->
+          <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+            <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-clock"></i> Scheduling &amp; Timing</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label>Exam Duration (minutes)</label>
+                <input type="number" class="form-control" id="case-duration" min="1" max="480" value="45" placeholder="e.g. 45">
+              </div>
+              <div class="form-group">
+                <label>Min. Time Before Submit (min)</label>
+                <input type="number" class="form-control" id="case-min-time" min="0" max="480" value="0" placeholder="0 = no restriction">
+              </div>
+              <div class="form-group">
+                <label>Scheduled Start</label>
+                <input type="datetime-local" class="form-control" id="case-start-time">
+              </div>
+              <div class="form-group">
+                <label>Scheduled End (Deadline)</label>
+                <input type="datetime-local" class="form-control" id="case-end-time">
+              </div>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;"><i class="fa-solid fa-circle-info"></i> Leave start/end blank for an always-available assessment. Min. time prevents early submissions.</p>
+          </div>
         </div>
 
         <div class="action-buttons">
@@ -279,6 +327,30 @@ Correct Answer: B"></textarea>
                 <label for="coding-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
               </div>
             </div>
+          </div>
+
+          <!-- Scheduling & Timing -->
+          <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+            <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-clock"></i> Scheduling &amp; Timing</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label>Exam Duration (minutes)</label>
+                <input type="number" class="form-control" id="coding-duration" min="1" max="480" value="60" placeholder="e.g. 60">
+              </div>
+              <div class="form-group">
+                <label>Min. Time Before Submit (min)</label>
+                <input type="number" class="form-control" id="coding-min-time" min="0" max="480" value="0" placeholder="0 = no restriction">
+              </div>
+              <div class="form-group">
+                <label>Scheduled Start</label>
+                <input type="datetime-local" class="form-control" id="coding-start-time">
+              </div>
+              <div class="form-group">
+                <label>Scheduled End (Deadline)</label>
+                <input type="datetime-local" class="form-control" id="coding-end-time">
+              </div>
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.5rem;"><i class="fa-solid fa-circle-info"></i> Leave start/end blank for an always-available assessment. Min. time prevents early submissions.</p>
           </div>
         </div>
 

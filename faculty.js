@@ -446,7 +446,11 @@ document.addEventListener('DOMContentLoaded', () => {
         proctoring: document.getElementById('mcq-proctor')?.value || 'strict',
         allowTab: document.getElementById('mcq-allow-tab')?.checked || false,
         allowPaste: document.getElementById('mcq-allow-paste')?.checked || false,
-        publishResult: document.getElementById('mcq-publish-res')?.checked ?? true
+        publishResult: document.getElementById('mcq-publish-res')?.checked ?? true,
+        duration: parseInt(document.getElementById('mcq-duration')?.value) || 30,
+        minTime: parseInt(document.getElementById('mcq-min-time')?.value) || 0,
+        startTime: document.getElementById('mcq-start-time')?.value || '',
+        endTime: document.getElementById('mcq-end-time')?.value || ''
       };
       const saved = window.DB.saveAssessment({ title, type: 'mcq', questions: accepted, settings });
       // Get the saved assessment to show its invite code
@@ -530,7 +534,11 @@ document.addEventListener('DOMContentLoaded', () => {
         proctoring: document.getElementById('case-proctor')?.value || 'strict',
         allowTab: document.getElementById('case-allow-tab')?.checked || false,
         allowPaste: document.getElementById('case-allow-paste')?.checked || false,
-        publishResult: document.getElementById('case-publish-res')?.checked ?? true
+        publishResult: document.getElementById('case-publish-res')?.checked ?? true,
+        duration: parseInt(document.getElementById('case-duration')?.value) || 45,
+        minTime: parseInt(document.getElementById('case-min-time')?.value) || 0,
+        startTime: document.getElementById('case-start-time')?.value || '',
+        endTime: document.getElementById('case-end-time')?.value || ''
       };
       const savedId = window.DB.saveAssessment({ title, type: 'case', content, questions, settings });
       const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
@@ -616,7 +624,11 @@ document.addEventListener('DOMContentLoaded', () => {
         proctoring: document.getElementById('coding-proctor')?.value || 'strict',
         allowTab: document.getElementById('coding-allow-tab')?.checked || false,
         allowPaste: document.getElementById('coding-allow-paste')?.checked || false,
-        publishResult: document.getElementById('coding-publish-res')?.checked ?? true
+        publishResult: document.getElementById('coding-publish-res')?.checked ?? true,
+        duration: parseInt(document.getElementById('coding-duration')?.value) || 60,
+        minTime: parseInt(document.getElementById('coding-min-time')?.value) || 0,
+        startTime: document.getElementById('coding-start-time')?.value || '',
+        endTime: document.getElementById('coding-end-time')?.value || ''
       };
       const savedId = window.DB.saveAssessment({ title, type: 'coding', questions, settings });
       const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);

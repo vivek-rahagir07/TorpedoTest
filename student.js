@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let pendingViolationReason = '';
   let screenStream      = null;
   let screenCaptureInterval = null;
+  let examStartedAt     = null;  // timestamp when exam began
 
   // ---- Helper: Show View ----
   function showView(view) {
@@ -194,6 +195,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================================================
   function selectAssessment(item) {
     currentAssessment = item;
+    const settings = item.settings || {};
+
+    // --- Enforce Scheduled Start ---
+    if (settings.startTime) {
+      const startDate = new Date(settings.startTime);
+      if (Date.now() < startDate.getTime()) {
+        const formatted = startDate.toLocaleString();
+        joinErrorMsg.textContent = `This exam is not open yet. It starts at ${formatted}.`;
+        joinError.classList.remove('hidden');
+        currentAssessment = null;
+        return;
+      }
+    }
+
+    // --- Enforce Scheduled End ---
+    if (settings.endTime) {
+      const endDate = new Date(settings.endTime);
+      if (Date.now() > endDate.getTime()) {
+        const formatted = endDate.toLocaleString();
+        joinErrorMsg.textContent = `This exam has closed. The deadline was ${formatted}.`;
+        joinError.classList.remove('hidden');
+        currentAssessment = null;
+        return;
+      }
+    }
+
     showView(viewSyscheck);
     runSystemCheckSequence();
   }
@@ -300,9 +327,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   syscheckNextBtn.addEventListener('click', () => {
     const typeLabels = { mcq: 'MCQ Assessment', case: 'Case Based Assessment', coding: 'Coding Assessment' };
+    const settings = currentAssessment.settings || {};
     preTitleEl.textContent = currentAssessment.title;
     preTypeBadge.textContent = typeLabels[currentAssessment.type] || 'Assessment';
-    preMetaEl.textContent = `${currentAssessment.questions.length} Question${currentAssessment.questions.length !== 1 ? 's' : ''} • Full Screen Required`;
+
+    // Build meta info including timing
+    const qCount = currentAssessment.questions.length;
+    const duration = settings.duration || Math.min(90, Math.max(10, qCount * 2));
+    let metaParts = [`${qCount} Question${qCount !== 1 ? 's' : ''}`, `${duration} Minutes`, 'Full Screen Required'];
+    if (settings.minTime > 0) {
+      metaParts.push(`Min. ${settings.minTime} min before submit`);
+    }
+    if (settings.endTime) {
+      const deadline = new Date(settings.endTime).toLocaleString();
+      metaParts.push(`Deadline: ${deadline}`);
+    }
+    preMetaEl.textContent = metaParts.join(' • ');
     showView(viewPre);
   });
 
@@ -364,10 +404,21 @@ document.addEventListener('DOMContentLoaded', () => {
     studentAnswers = {};
     currentQIndex = 0;
     violationsLog = [];
+    examStartedAt = Date.now();
     flagCounterEl.classList.add('hidden');
 
-    const minutes = Math.min(90, Math.max(10, currentAssessment.questions.length * 2));
+    const settings = currentAssessment.settings || {};
+    const minutes = settings.duration || Math.min(90, Math.max(10, currentAssessment.questions.length * 2));
     secondsLeft = minutes * 60;
+
+    // If there's a hard deadline, cap the timer so it doesn't exceed the end time
+    if (settings.endTime) {
+      const msUntilEnd = new Date(settings.endTime).getTime() - Date.now();
+      if (msUntilEnd > 0) {
+        const secsUntilEnd = Math.floor(msUntilEnd / 1000);
+        secondsLeft = Math.min(secondsLeft, secsUntilEnd);
+      }
+    }
 
     showView(viewPlayer);
     buildPalette();
@@ -605,7 +656,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentQIndex < currentAssessment.questions.length - 1) renderQuestion(currentQIndex + 1); 
     else submitAssessment();
   });
-  if (submitBtn) submitBtn.addEventListener('click', submitAssessment);
+  if (submitBtn) submitBtn.addEventListener('click', () => {
+    // Enforce minimum time
+    const settings = currentAssessment?.settings || {};
+    const minTimeSec = (settings.minTime || 0) * 60;
+    if (minTimeSec > 0 && examStartedAt) {
+      const elapsed = (Date.now() - examStartedAt) / 1000;
+      if (elapsed < minTimeSec) {
+        const remaining = Math.ceil((minTimeSec - elapsed) / 60);
+        window.Toast.show(`You must spend at least ${settings.minTime} min on this exam. ${remaining} min remaining.`, 'error');
+        return;
+      }
+    }
+    submitAssessment();
+  });
 
   // ===========================================================
   // 9. SUBMIT & RESULTS
