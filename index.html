@@ -8,248 +8,313 @@
   <link rel="stylesheet" href="global.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body { align-items: center; justify-content: center; }
+    body { 
+      align-items: center; 
+      justify-content: center;
+      padding: 2rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
 
-    /* ---- Hero ---- */
+    /* ---- Navbar / Brand (Subtle) ---- */
+    .top-brand {
+      position: absolute;
+      top: 2rem;
+      left: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      animation: fadeInDown 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+      z-index: 10;
+    }
+    .top-brand i {
+      color: var(--accent-primary);
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+
+    /* ---- Hero Layout ---- */
     .hero-section {
       text-align: center;
-      max-width: 900px;
+      max-width: 1000px;
       width: 100%;
-      padding: 3rem 2rem;
       position: relative;
       z-index: 1;
-    }
-
-    .logo-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 99px;
-      padding: 0.45rem 1.2rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--accent-primary);
-      margin-bottom: 2rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      animation: fadeInDown 0.6s ease-out both;
-      box-shadow: 0 0 20px var(--accent-glow);
-    }
-
-    .logo-badge i {
-      animation: iconPulseGlow 3s ease-in-out infinite;
-    }
-
-    /* Animated badge dot */
-    .live-dot {
-      width: 7px; height: 7px;
-      background: var(--success);
-      border-radius: 50%;
-      animation: pulse 1.5s ease-in-out infinite;
-      box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
-    }
-
-    .hero-title {
-      font-size: clamp(3rem, 7vw, 5.5rem);
-      font-weight: 900;
-      letter-spacing: -0.05em;
-      line-height: 1.05;
-      margin-bottom: 1.25rem;
-      background: linear-gradient(135deg, var(--accent-primary) 0%, #8b5cf6 40%, var(--accent-tertiary) 70%, var(--success) 100%);
-      background-size: 300% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 6s linear infinite, fadeInUp 0.7s ease-out 0.1s both;
-    }
-
-    .hero-subtitle {
-      font-size: 1.15rem;
-      margin-bottom: 3.5rem;
-      max-width: 540px;
-      margin-left: auto;
-      margin-right: auto;
-      animation: fadeInUp 0.7s ease-out 0.25s both;
-    }
-
-    /* ---- Portal Cards ---- */
-    .portal-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.75rem;
-      animation: fadeInUp 0.7s ease-out 0.35s both;
-    }
-
-    .portal-card {
-      padding: 2.75rem 2.25rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      text-decoration: none;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    /* ---- Premium Instructions Card ---- */
+    .instructions-card {
+      position: relative;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: left;
+      padding: 3.5rem;
+      border-radius: 32px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(40px) saturate(200%);
+      -webkit-backdrop-filter: blur(40px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 
+        0 30px 60px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+        0 20px 80px var(--accent-glow-lg);
+      animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+      overflow: hidden;
+    }
+
+    [data-theme="dark"] .instructions-card {
+      background: rgba(15, 20, 35, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 
+        0 30px 60px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 20px 80px rgba(109, 94, 245, 0.25);
+    }
+
+    /* Top glow accent line */
+    .instructions-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--accent-tertiary), var(--accent-primary), var(--accent-secondary));
+      box-shadow: 0 4px 20px var(--accent-glow-lg);
+    }
+
+    .instructions-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    
+    .instructions-header i {
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 4px 10px var(--accent-glow));
+    }
+
+    .instructions-header h2 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0;
       color: var(--text-primary);
+    }
+
+    .instructions-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 3.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .instructions-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .instructions-list li i {
+      color: var(--accent-primary);
+      font-size: 1.25rem;
+      margin-top: 0.15rem;
+      opacity: 0.9;
+    }
+
+    .instructions-list li strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .btn-massive {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 1.4rem;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+      color: #ffffff;
+      text-decoration: none;
+      box-shadow: 0 10px 30px var(--accent-glow-lg), 0 0 0 2px rgba(255,255,255,0.2) inset;
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       overflow: hidden;
-      cursor: pointer;
     }
-
-    /* Shimmer sweep on hover */
-    .portal-card::before {
+    
+    .btn-massive::after {
       content: '';
       position: absolute;
-      top: -50%; left: -75%;
-      width: 50%; height: 200%;
-      background: linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent);
-      transform: skewX(-15deg);
-      transition: left 0.6s ease;
-      pointer-events: none;
-    }
-    .portal-card:hover::before { left: 135%; }
-
-    /* Glow halo */
-    .portal-card::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: calc(var(--radius-lg) + 2px);
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      z-index: -1;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: rotate(45deg);
+      transition: all 0.6s ease;
       opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-    .portal-card:hover::after { opacity: 0.2; }
-
-    .portal-card:hover {
-      transform: translateY(-10px) scale(1.01);
-      box-shadow: 0 30px 80px var(--accent-glow-lg);
     }
 
-    .card-icon-wrap {
-      width: 96px; height: 96px;
-      border-radius: 26px;
-      background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1.75rem;
-      box-shadow: 0 12px 40px var(--accent-glow), 0 4px 12px rgba(0,0,0,0.12);
-      position: relative; z-index: 1;
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      animation: float 5s ease-in-out infinite;
-    }
-
-    .portal-card:hover .card-icon-wrap {
-      transform: scale(1.12) rotate(-3deg);
-      box-shadow: 0 20px 60px var(--accent-glow-lg);
-    }
-
-    .card-icon { font-size: 2.3rem; color: white; }
-
-    .card-title {
-      font-size: 1.65rem;
-      margin-bottom: 0.75rem;
-      font-weight: 800;
-      position: relative; z-index: 1;
-      letter-spacing: -0.03em;
-    }
-
-    .card-desc {
-      color: var(--text-secondary);
-      text-align: center;
-      line-height: 1.65;
-      position: relative; z-index: 1;
-      margin-bottom: 2rem;
-      font-size: 0.93rem;
-    }
-
-    .card-arrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--accent-primary);
-      position: relative; z-index: 1;
-      padding: 0.5rem 1rem;
-      border-radius: 99px;
-      background: rgba(79,70,229,0.08);
-      border: 1px solid rgba(79,70,229,0.2);
-      transition: all 0.3s ease;
+    .btn-massive:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px var(--accent-glow-lg), 0 0 0 2px rgba(255,255,255,0.3) inset;
       letter-spacing: 0.02em;
+    }
+    
+    .btn-massive:hover::after {
+      left: 100%;
+      opacity: 1;
+    }
+
+    /* ---- Stats Row ---- */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      margin-top: 4rem;
+      animation: fadeInUp 0.8s ease-out 0.3s both;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .stat-num {
+      font-size: 2.25rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.04em;
+      filter: drop-shadow(0 2px 10px var(--accent-glow));
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
       text-transform: uppercase;
-      font-size: 0.75rem;
-    }
-    .portal-card:hover .card-arrow {
-      background: rgba(79,70,229,0.15);
-      gap: 0.8rem;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      font-weight: 700;
     }
 
-    .student-card .card-icon-wrap {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 12px 40px rgba(16,185,129,0.35);
-    }
-    .student-card .card-arrow {
-      color: var(--success);
-      background: rgba(16,185,129,0.08);
-      border-color: rgba(16,185,129,0.2);
-    }
-    .student-card:hover .card-arrow { background: rgba(16,185,129,0.15); }
-    .student-card:hover { box-shadow: 0 30px 80px rgba(16,185,129,0.25); }
-
-    /* ---- Feature Pills ---- */
+    /* ---- Feature Marquee / Row ---- */
     .features-row {
       display: flex;
       justify-content: center;
-      gap: 0.75rem;
+      gap: 1rem;
       margin-top: 3rem;
       flex-wrap: wrap;
-      animation: fadeInUp 0.7s ease-out 0.5s both;
+      animation: fadeInUp 0.8s ease-out 0.4s both;
     }
 
     .feature-pill {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
       background: var(--glass-bg);
+      backdrop-filter: blur(12px);
       border: 1px solid var(--glass-border);
       border-radius: 99px;
-      padding: 0.45rem 1rem;
-      font-size: 0.78rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
       font-weight: 600;
       color: var(--text-secondary);
-      transition: var(--transition);
+      transition: all 0.3s ease;
       cursor: default;
     }
-    .feature-pill i { color: var(--accent-primary); }
+    .feature-pill i { color: var(--accent-primary); font-size: 1rem; }
     .feature-pill:hover {
       border-color: var(--accent-primary);
       color: var(--accent-primary);
-      background: rgba(79,70,229,0.07);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px var(--accent-glow);
+      background: rgba(79,70,229,0.05);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px var(--accent-glow);
     }
 
-    /* ---- Stats ---- */
-    .stats-row {
+    /* ---- Footer ---- */
+    .landing-footer {
+      position: absolute;
+      bottom: 2rem;
+      width: 100%;
+      text-align: center;
+      animation: fadeInUp 0.8s ease-out 0.6s both;
+      z-index: 10;
+    }
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 99px;
+      transition: all 0.3s;
+      background: transparent;
+    }
+    .admin-link:hover {
+      color: var(--text-primary);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      bottom: 2rem; right: 2rem;
+      width: 48px; height: 48px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--glass-shadow);
+      font-size: 1.15rem;
+      z-index: 999;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      border-radius: 50%;
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 2.5rem;
-      margin-top: 2.5rem;
-      flex-wrap: wrap;
-      animation: fadeInUp 0.7s ease-out 0.45s both;
+      cursor: pointer;
+      transition: var(--transition-bounce);
     }
-
-    .stat-item { text-align: center; }
-    .stat-num {
-      font-size: 1.8rem;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.04em;
+    .theme-toggle:hover {
+      transform: scale(1.15) rotate(15deg);
+      color: var(--accent-primary);
+      border-color: var(--accent-primary);
+      box-shadow: 0 8px 25px var(--accent-glow);
     }
-    .stat-label { font-size: 0.78rem; color: var(--text-secondary); font-weight: 500; margin-top: 0.1rem; }
+    
+    @media (max-width: 768px) {
+      .instructions-card { padding: 2rem; }
+      .stats-row { gap: 2rem; flex-wrap: wrap; }
+      .top-brand { position: relative; top: 0; left: 0; margin-bottom: 2rem; justify-content: center; }
+      .landing-footer { position: relative; bottom: 0; margin-top: 4rem; }
+    }
   </style>
 </head>
 <body>
@@ -262,20 +327,37 @@
     <div class="bg-orb bg-orb-4"></div>
   </div>
 
+  <div class="top-brand">
+    <i class="fa-solid fa-shield-halved"></i> Torpedo SkillCheck
+  </div>
+
   <div class="hero-section">
-    <!-- Instructions & Action -->
-    <div class="glass-panel" style="text-align: left; padding: 2.5rem; max-width: 700px; margin: 0 auto; animation: fadeInUp 0.7s ease-out 0.35s both;">
-      <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; font-weight: 700; color: var(--accent-primary);">
-        <i class="fa-solid fa-clipboard-list"></i> General Exam Instructions
-      </h2>
-      <ul style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 2.5rem; padding-left: 1.2rem; font-size: 1.05rem;">
-        <li><strong>Strict Proctoring:</strong> All assessments are monitored with AI-based audio and video proctoring.</li>
-        <li><strong>Environment:</strong> Ensure you are in a quiet, well-lit room with a stable internet connection.</li>
-        <li><strong>Anti-Cheat measures:</strong> Switching tabs, exiting full-screen mode, or copying/pasting will result in automatic flags.</li>
-        <li><strong>Invite Code:</strong> You will need an Invite Code provided by your faculty to join a live assessment.</li>
+    <!-- Premium Instructions Card -->
+    <div class="instructions-card">
+      <div class="instructions-header">
+        <i class="fa-solid fa-clipboard-check"></i>
+        <h2>General Exam Instructions</h2>
+      </div>
+      <ul class="instructions-list">
+        <li>
+          <i class="fa-solid fa-user-shield"></i>
+          <span><strong>Strict Proctoring:</strong> All assessments are monitored with AI-based audio and video proctoring to ensure integrity.</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-location-crosshairs"></i>
+          <span><strong>Environment:</strong> Ensure you are in a quiet, well-lit room with a stable internet connection before beginning.</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-ban"></i>
+          <span><strong>Anti-Cheat Measures:</strong> Switching tabs, exiting full-screen mode, or copying/pasting will result in automatic flags and potential termination.</span>
+        </li>
+        <li>
+          <i class="fa-solid fa-key"></i>
+          <span><strong>Invite Code:</strong> You will need a valid Invite Code provided by your faculty instructor to join a live assessment session.</span>
+        </li>
       </ul>
-      <a href="student.html" class="btn btn-primary" style="display: block; width: 100%; text-align: center; padding: 1rem; font-size: 1.15rem;">
-        Proceed to Student Login <i class="fa-solid fa-arrow-right"></i>
+      <a href="student.html" class="btn-massive">
+        Proceed to Student Login <i class="fa-solid fa-arrow-right-to-bracket"></i>
       </a>
     </div>
 
@@ -295,7 +377,7 @@
       </div>
       <div class="stat-item">
         <div class="stat-num">∞</div>
-        <div class="stat-label">Students</div>
+        <div class="stat-label">Students Supported</div>
       </div>
     </div>
 
@@ -303,23 +385,23 @@
     <div class="features-row">
       <div class="feature-pill"><i class="fa-solid fa-lock"></i> Anti-Cheat Proctoring</div>
       <div class="feature-pill"><i class="fa-solid fa-microphone"></i> Audio Monitoring</div>
-      <div class="feature-pill"><i class="fa-solid fa-file-pdf"></i> PDF Parsing</div>
+      <div class="feature-pill"><i class="fa-solid fa-desktop"></i> Screen Analytics</div>
+      <div class="feature-pill"><i class="fa-solid fa-file-pdf"></i> AI Extraction</div>
       <div class="feature-pill"><i class="fa-solid fa-code"></i> Coding Sandbox</div>
-      <div class="feature-pill"><i class="fa-solid fa-key"></i> Invite Codes</div>
-      <div class="feature-pill"><i class="fa-solid fa-moon"></i> Dark Mode</div>
     </div>
   </div>
 
   <!-- Footer Link for Faculty -->
-  <div style="text-align: center; margin-top: 2rem; padding-bottom: 2rem; animation: fadeInUp 0.7s ease-out 0.6s both; position: relative; z-index: 10;">
-    <a href="faculty.html" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none; opacity: 0.7; transition: opacity 0.3s;">
-      <i class="fa-solid fa-lock"></i> Faculty Administration Login
+  <footer class="landing-footer">
+    <a href="faculty.html" class="admin-link">
+      <i class="fa-solid fa-user-tie"></i> Faculty Administration Portal
     </a>
-  </div>
+  </footer>
+
   <button class="theme-toggle" id="theme-toggle" title="Toggle Dark Mode">
     <i class="fa-solid fa-moon"></i>
   </button>
 
-  <script src="main.js?v=5"></script>
+  <script src="main.js?v=6"></script>
 </body>
 </html>
