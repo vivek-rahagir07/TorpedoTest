@@ -87,23 +87,34 @@
           <button class="btn btn-primary btn-block" id="join-btn">Join Now <i class="fa-solid fa-arrow-right"></i></button>
         </div>
 
-        <!-- Right: Result Log -->
-        <div class="pre-card glass-panel animate-fade-in" style="margin: 0; padding: 2rem; display: flex; flex-direction: column;">
-          <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-line"></i> Your Result Log</h3>
-          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Past assessments with published results.</p>
-          <div style="flex-grow: 1; overflow-y: auto; max-height: 300px;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-              <thead>
-                <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary);">
-                  <th style="padding: 0.5rem; text-align: left;">Assessment</th>
-                  <th style="padding: 0.5rem; text-align: left;">Date</th>
-                  <th style="padding: 0.5rem; text-align: right;">Score</th>
-                </tr>
-              </thead>
-              <tbody id="result-log-body">
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
+        <!-- Right: Result Log & Trends -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Performance Trends -->
+          <div class="pre-card glass-panel animate-fade-in" style="margin: 0; padding: 2rem;">
+            <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-bar"></i> Performance Trends</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Your recent assessment scores.</p>
+            <div id="performance-trends-chart" style="display: flex; align-items: flex-end; gap: 10px; height: 150px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; overflow-x: auto;">
+              <!-- Bars injected by JS -->
+            </div>
+          </div>
+
+          <!-- Result Log -->
+          <div class="pre-card glass-panel animate-fade-in" style="margin: 0; padding: 2rem; display: flex; flex-direction: column; flex-grow: 1;">
+            <h3 style="margin-bottom: 1rem;"><i class="fa-solid fa-chart-line"></i> Your Result Log</h3>
+            <div style="flex-grow: 1; overflow-y: auto; max-height: 250px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                  <tr style="border-bottom: 1px solid var(--glass-border); color: var(--text-secondary);">
+                    <th style="padding: 0.5rem; text-align: left;">Assessment</th>
+                    <th style="padding: 0.5rem; text-align: left;">Date</th>
+                    <th style="padding: 0.5rem; text-align: right;">Score</th>
+                  </tr>
+                </thead>
+                <tbody id="result-log-body">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -303,8 +314,9 @@
       <h2>Assessment Submitted!</h2>
       <p id="results-summary" style="margin: 1rem 0;"></p>
       <div id="results-score" style="font-size: 2.5rem; font-weight: 800; color: var(--accent-primary); margin: 1.5rem 0;"></div>
-      <div id="results-review-wrap" class="hidden" style="margin-bottom:1rem;">
-        <button class="btn btn-outline" id="view-review-btn"><i class="fa-solid fa-magnifying-glass"></i> Review Your Answers</button>
+      <div id="results-review-wrap" class="hidden" style="margin-bottom:1rem; display: flex; gap: 1rem; justify-content: center;">
+        <button class="btn btn-outline" id="view-review-btn"><i class="fa-solid fa-magnifying-glass"></i> Review Answers</button>
+        <button class="btn btn-outline" id="download-pdf-btn"><i class="fa-solid fa-file-pdf"></i> Download PDF Report</button>
       </div>
       <a href="index.html" class="btn btn-primary mt-3"><i class="fa-solid fa-home"></i> Return Home</a>
     </div>

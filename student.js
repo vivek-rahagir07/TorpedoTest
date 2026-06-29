@@ -403,6 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let wakeLock = null;
+  let activeSectionIndex = -1;
+  let sectionTimerInterval = null;
+  let sectionSecondsLeft = 0;
 
   async function startAssessment() {
     // Request Screen Share
@@ -439,28 +442,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Question Randomization ---
-    if (settings.randomize && currentAssessment.type === 'mcq') {
+    if (currentAssessment.type === 'mixed') {
+       let secs = [...currentAssessment.sections];
+       if (settings.randomize) {
+          for (let i = secs.length - 1; i > 0; i--) {
+             const j = Math.floor(Math.random() * (i + 1));
+             [secs[i], secs[j]] = [secs[j], secs[i]];
+          }
+       }
+       let flatQs = [];
+       secs.forEach((sec, sIdx) => {
+          let qs = [...sec.questions];
+          if (settings.randomize) {
+             for (let i = qs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [qs[i], qs[j]] = [qs[j], qs[i]];
+             }
+          }
+          if (settings.shuffleOptions && sec.type === 'mcq') {
+             qs.forEach(q => {
+               let opts = [...q.opts];
+               let correctStr = opts[q.ans];
+               for (let i = opts.length - 1; i > 0; i--) {
+                 const j = Math.floor(Math.random() * (i + 1));
+                 [opts[i], opts[j]] = [opts[j], opts[i]];
+               }
+               q.opts = opts;
+               q.ans = opts.indexOf(correctStr);
+             });
+          }
+          qs.forEach(q => {
+             q._mixedType = sec.type;
+             q._sectionTimer = sec.timer;
+             q._sectionIndex = sIdx;
+             if (sec.type === 'case') q._caseContent = sec.content;
+             flatQs.push(q);
+          });
+       });
+       currentAssessment.questions = flatQs;
+    } else if (settings.randomize && currentAssessment.type === 'mcq') {
       let qs = [...currentAssessment.questions];
-      // Fisher-Yates shuffle questions
       for (let i = qs.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [qs[i], qs[j]] = [qs[j], qs[i]];
       }
-      // Subset slicing
       if (settings.questionsPerStudent > 0 && settings.questionsPerStudent < qs.length) {
         qs = qs.slice(0, settings.questionsPerStudent);
       }
-      // Shuffle options per question
       if (settings.shuffleOptions) {
         qs.forEach(q => {
           let opts = [...q.opts];
-          let correctStr = opts[q.ans]; // remember the correct text
+          let correctStr = opts[q.ans];
           for (let i = opts.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [opts[i], opts[j]] = [opts[j], opts[i]];
           }
           q.opts = opts;
-          q.ans = opts.indexOf(correctStr); // remap the correct index
+          q.ans = opts.indexOf(correctStr);
         });
       }
       currentAssessment.questions = qs;
@@ -632,10 +670,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderQuestion(index) {
     saveCurrentAnswer();
-    currentQIndex = index;
     const questions = currentAssessment.questions || [{ _placeholder: true }];
     const qData = questions[index] || {};
+
+    if (currentAssessment.type === 'mixed' && qData._sectionIndex < activeSectionIndex) {
+        window.Toast.show("Cannot return to previous sections.", "error");
+        return; // stay on current
+    }
+
+    currentQIndex = index;
     const total = questions.length;
+
+    // Section Timer Logic
+    if (currentAssessment.type === 'mixed') {
+        if (qData._sectionIndex !== activeSectionIndex) {
+            activeSectionIndex = qData._sectionIndex;
+            sectionSecondsLeft = (qData._sectionTimer || 15) * 60;
+            if (sectionTimerInterval) clearInterval(sectionTimerInterval);
+            sectionTimerInterval = setInterval(() => {
+                sectionSecondsLeft--;
+                if (sectionSecondsLeft <= 0) {
+                    clearInterval(sectionTimerInterval);
+                    let nextSecIdx = currentQIndex;
+                    while(nextSecIdx < questions.length && questions[nextSecIdx]._sectionIndex === activeSectionIndex) {
+                        nextSecIdx++;
+                    }
+                    if (nextSecIdx < questions.length) {
+                        window.Toast.show("Section time up! Moving to next section.", "error");
+                        renderQuestion(nextSecIdx);
+                    } else {
+                        submitAssessment();
+                    }
+                }
+            }, 1000);
+        }
+    }
 
     questionTracker.textContent = `Question ${index + 1} of ${total}`;
     prevBtn.disabled = index === 0;
@@ -651,7 +720,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     let html = '';
-    if (currentAssessment.type === 'mcq') {
+    const rType = qData._mixedType || currentAssessment.type;
+    if (rType === 'mcq') {
       html = `<p class="q-text">${qData.q}</p>`;
 
       // Rich Media Support
@@ -679,16 +749,16 @@ document.addEventListener('DOMContentLoaded', () => {
         html += `<label class="option-label"><input type="radio" name="mcq_q" value="${i}"> <div class="option-marker">${optionLetters[i]}</div> <span>${opt}</span></label>`;
       });
       html += `</div>`;
-    } else if (currentAssessment.type === 'case') {
+    } else if (rType === 'case') {
       html = `
         <div class="case-study-panel">
           <h4><i class="fa-solid fa-book-open"></i> Case Study Scenario</h4>
-          <p>${currentAssessment.content || 'No case study content provided.'}</p>
+          <p>${(qData._caseContent || currentAssessment.content) || 'No case study content provided.'}</p>
         </div>
         <p class="q-text">${qData.q}</p>
         <textarea class="case-answer-box" id="case-ans-input" placeholder="Type your detailed answer here...">${studentAnswers[index] || ''}</textarea>
       `;
-    } else if (currentAssessment.type === 'match') {
+    } else if (rType === 'match') {
       html = `
         <div class="match-container">
           <p class="q-text" style="margin-bottom: 1.5rem;"><i class="fa-solid fa-arrows-up-down-left-right"></i> Drag the items from the bank to match them with the correct terms.</p>
@@ -700,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
-    } else if (currentAssessment.type === 'coding') {
+    } else if (rType === 'coding') {
       if (qData.probType === 'web') {
         html = `
         <div class="coding-split-layout" style="display:grid; grid-template-columns: 220px 1fr 1fr; gap:1.5rem; min-height: 55vh;">
@@ -1089,10 +1159,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveCurrentAnswer() {
     if (!currentAssessment) return;
-    if (currentAssessment.type === 'mcq') {
+    const rType = qData._mixedType || currentAssessment.type;
+    if (rType === 'mcq') {
       const s = dynamicQContent.querySelector('input[type="radio"]:checked');
       if (s) studentAnswers[currentQIndex] = parseInt(s.value);
-    } else if (currentAssessment.type === 'coding') {
+    } else if (rType === 'coding') {
       const qData = currentAssessment.questions[currentQIndex];
       if (qData.probType === 'web') {
         if (window.codeMirrorInstance && window.webProjectState) {
@@ -1104,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('code-ans-input');
         if (input && input.value.trim()) studentAnswers[currentQIndex] = input.value.trim();
       }
-    } else if (currentAssessment.type === 'match') {
+    } else if (rType === 'match') {
       const matchMap = {};
       document.querySelectorAll('.match-drop-zone').forEach(zone => {
         const leftIdx = zone.dataset.leftIdx;
@@ -1150,6 +1221,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function submitAssessment() {
     clearInterval(timerInterval);
     if (qTimerInterval) { clearInterval(qTimerInterval); qTimerInterval = null; }
+    if (sectionTimerInterval) { clearInterval(sectionTimerInterval); sectionTimerInterval = null; }
     isActive = false;
     saveCurrentAnswer();
     stopCameraStream();
@@ -1160,7 +1232,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const answered = Object.keys(studentAnswers).length;
     let scoreText = 'Submitted';
 
-    if (currentAssessment.type === 'mcq') {
+    const rType = qData._mixedType || currentAssessment.type;
+    if (rType === 'mcq') {
       let scoreNum = 0;
       let penaltyNum = 0;
       let maxScore = 0;
@@ -1465,5 +1538,58 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(div);
     });
   };
+
+
+  // =====================================================
+  // PERFORMANCE TRENDS & PDF EXPORT
+  // =====================================================
+  const navTrends = document.querySelector('.nav-item[data-target="trends-section"]');
+  if (navTrends) {
+      navTrends.addEventListener('click', () => {
+         const submissions = (window.DB ? window.DB.getSubmissions() : []).filter(s => s.studentName === studentName);
+         const tbody = document.getElementById('trends-table-body');
+         if (tbody) {
+             if (submissions.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--text-secondary);">No completed exams yet.</td></tr>';
+                 return;
+             }
+             tbody.innerHTML = submissions.map(sub => `
+               <tr>
+                 <td>${sub.assessmentTitle}</td>
+                 <td>${sub.submittedAt}</td>
+                 <td><strong style="color:var(--accent-primary)">${sub.score}</strong></td>
+                 <td>
+                   <button class="btn btn-sm btn-outline btn-download-pdf" data-title="${sub.assessmentTitle}" data-score="${sub.score}" data-date="${sub.submittedAt}">
+                     <i class="fa-solid fa-file-pdf"></i> Download
+                   </button>
+                 </td>
+               </tr>
+             `).join('');
+             
+             // Attach PDF download handlers
+             tbody.querySelectorAll('.btn-download-pdf').forEach(btn => {
+                 btn.addEventListener('click', (e) => {
+                     const t = e.currentTarget.dataset.title;
+                     const s = e.currentTarget.dataset.score;
+                     const d = e.currentTarget.dataset.date;
+                     const content = `TORPEDO PERFORMANCE REPORT
+
+Student Name: ${studentName}
+Exam Title: ${t}
+Date Submitted: ${d}
+Score: ${s}
+
+-- Generated by Torpedo --`;
+                     const blob = new Blob([content], {type: 'text/plain'});
+                     const url = URL.createObjectURL(blob);
+                     const a = document.createElement('a');
+                     a.href = url;
+                     a.download = `Report_${t.replace(/\s+/g, '_')}.pdf`;
+                     a.click();
+                 });
+             });
+         }
+      });
+  }
 
 });

@@ -53,6 +53,12 @@
         <li class="nav-item" data-target="match-section">
           <i class="fa-solid fa-puzzle-piece"></i> Matching
         </li>
+        <li class="nav-item" data-target="mixed-section">
+          <i class="fa-solid fa-layer-group"></i> Mixed Exam
+        </li>
+        <li class="nav-item" data-target="analytics-section">
+          <i class="fa-solid fa-chart-pie"></i> Analytics
+        </li>
         <li class="nav-item" data-target="live-section">
           <i class="fa-solid fa-satellite-dish" style="color:var(--danger)"></i> Live Command Center
         </li>
@@ -553,6 +559,128 @@ Correct Answer: B"></textarea>
           <button class="btn btn-danger btn-outline btn-sm" id="clear-logs-btn">
             <i class="fa-solid fa-trash"></i> Clear Logs
           </button>
+        </div>
+      </div>
+
+      <!-- =================== MIXED ASSESSMENT SECTION =================== -->
+      <div id="mixed-section" class="assessment-section">
+        <div class="section-header">
+          <i class="fa-solid fa-layer-group"></i>
+          <h2>Mixed Assessment</h2>
+        </div>
+        <p class="section-desc">Create a mixed exam with multiple sections (MCQ, Case Based, Coding). Each section can have its own timer.</p>
+
+        <div class="form-group">
+          <label>Assessment Title</label>
+          <input type="text" id="mixed-title-main" class="form-control" placeholder="e.g. Final Exam - All Topics">
+        </div>
+
+        <div id="mixed-sections-container">
+          <!-- Dynamically added sections go here -->
+        </div>
+
+        <div class="action-buttons" style="margin-bottom: 2rem;">
+          <button class="btn btn-outline" id="add-mixed-mcq-btn"><i class="fa-solid fa-plus"></i> Add MCQ Section</button>
+          <button class="btn btn-outline" id="add-mixed-case-btn"><i class="fa-solid fa-plus"></i> Add Case Section</button>
+          <button class="btn btn-outline" id="add-mixed-coding-btn"><i class="fa-solid fa-plus"></i> Add Coding Section</button>
+        </div>
+
+        <div class="assessment-settings glass-panel" style="margin: 2rem 0; padding: 1.5rem; text-align: left;">
+          <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-sliders"></i> Global Settings</h3>
+          <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+              <label>Proctoring Level</label>
+              <select class="form-control" id="mixed-proctor">
+                <option value="strict">Strict (Camera, Audio, Tab)</option>
+                <option value="moderate">Moderate (Tab only)</option>
+                <option value="light">Light (No flags)</option>
+              </select>
+            </div>
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem; padding-top: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-allow-tab" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-allow-tab" style="margin:0; cursor:pointer;">Allow Tab Switching</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-allow-paste" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-allow-paste" style="margin:0; cursor:pointer;">Allow Copy/Paste</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-publish-res" checked style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-publish-res" style="margin:0; cursor:pointer;">Publish Results to Student</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-allow-review" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-allow-review" style="margin:0; cursor:pointer;">Allow Post-Exam Review</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-randomize" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-randomize" style="margin:0; cursor:pointer;">Randomize Sections/Questions</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="mixed-shuffle-opts" style="width: 1.2rem; height: 1.2rem; accent-color: var(--accent-primary);">
+                <label for="mixed-shuffle-opts" style="margin:0; cursor:pointer;">Shuffle MCQ Options</label>
+              </div>
+            </div>
+          </div>
+          
+          <div style="border-top: 1px solid var(--glass-border); margin-top: 1.25rem; padding-top: 1.25rem;">
+            <h4 style="margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary);"><i class="fa-solid fa-clock"></i> Global Scheduling</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+              <div class="form-group">
+                <label>Scheduled Start</label>
+                <input type="datetime-local" class="form-control" id="mixed-start-time">
+              </div>
+              <div class="form-group">
+                <label>Scheduled End (Deadline)</label>
+                <input type="datetime-local" class="form-control" id="mixed-end-time">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-primary" id="publish-mixed-btn"><i class="fa-solid fa-rocket"></i> Publish Mixed Assessment</button>
+        </div>
+      </div>
+
+      <!-- =================== ANALYTICS SECTION =================== -->
+      <div id="analytics-section" class="assessment-section">
+        <div class="section-header">
+          <i class="fa-solid fa-chart-pie"></i>
+          <h2>Analytics Dashboard</h2>
+        </div>
+        <p class="section-desc">View overall statistics and trends for all completed assessments.</p>
+        
+        <div class="grid-3" style="margin-bottom: 2rem;">
+          <div class="stat-card glass-panel" style="text-align: center;">
+            <span class="stat-title">Total Submissions</span>
+            <span class="stat-value" id="analytics-total-submissions">0</span>
+          </div>
+          <div class="stat-card glass-panel" style="text-align: center;">
+            <span class="stat-title">Average Score</span>
+            <span class="stat-value" id="analytics-avg-score">0%</span>
+          </div>
+          <div class="stat-card glass-panel" style="text-align: center;">
+            <span class="stat-title">Flagged Incidents</span>
+            <span class="stat-value text-danger" id="analytics-flagged">0</span>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <h3 style="margin-bottom: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-trophy"></i> Top Performers</h3>
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>Assessment</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-top-performers-body">
+              <tr><td colspan="3" style="text-align:center;">No data available</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

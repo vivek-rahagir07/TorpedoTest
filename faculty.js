@@ -838,6 +838,215 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =====================================================
+  // MIXED ASSESSMENT SECTION
+  // =====================================================
+  const mixedContainer = document.getElementById('mixed-sections-container');
+  const addMixedMcqBtn = document.getElementById('add-mixed-mcq-btn');
+  const addMixedCaseBtn = document.getElementById('add-mixed-case-btn');
+  const addMixedCodingBtn = document.getElementById('add-mixed-coding-btn');
+  const publishMixedBtn = document.getElementById('publish-mixed-btn');
+  let mixedSectionCount = 0;
+
+  function createMixedSectionUI(type) {
+    mixedSectionCount++;
+    const div = document.createElement('div');
+    div.className = 'glass-panel animate-fade-in mixed-section-card';
+    div.style.padding = '1.5rem';
+    div.style.marginBottom = '1.5rem';
+    div.style.position = 'relative';
+
+    const titleMap = { 'mcq': 'MCQ', 'case': 'Case Based', 'coding': 'Coding' };
+    const iconMap = { 'mcq': 'fa-list-check', 'case': 'fa-file-signature', 'coding': 'fa-code' };
+
+    let contentHtml = '';
+    if (type === 'mcq') {
+      contentHtml = `
+        <div class="form-group">
+          <label>Paste Questions (Text)</label>
+          <textarea class="form-control mixed-mcq-text" rows="5" placeholder="1. Q...\nA.\nB.\nC.\nD.\nAnswer: A"></textarea>
+        </div>
+      `;
+    } else if (type === 'case') {
+      contentHtml = `
+        <div class="form-group">
+          <label>Case Study Text</label>
+          <textarea class="form-control mixed-case-text" rows="4" placeholder="Case study background..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Question(s) - Format: Q1|Ans1 || Q2|Ans2</label>
+          <textarea class="form-control mixed-case-qs" rows="3" placeholder="What is the strategy? | Growth strategy || ..."></textarea>
+        </div>
+      `;
+    } else if (type === 'coding') {
+      contentHtml = `
+        <div class="form-group">
+          <label>Problem Description</label>
+          <textarea class="form-control mixed-coding-desc" rows="3" placeholder="Write a function to..."></textarea>
+        </div>
+        <div class="grid-2">
+           <div class="form-group">
+             <label>Sample Input</label>
+             <textarea class="form-control mixed-coding-in" rows="2"></textarea>
+           </div>
+           <div class="form-group">
+             <label>Expected Output</label>
+             <textarea class="form-control mixed-coding-out" rows="2"></textarea>
+           </div>
+        </div>
+      `;
+    }
+
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0;"><i class="fa-solid ${iconMap[type]}"></i> Section ${mixedSectionCount}: ${titleMap[type]}</h3>
+        <button class="btn-remove-card" title="Remove Section"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <input type="hidden" class="mixed-sec-type" value="${type}">
+      ${contentHtml}
+      <div class="grid-2 mt-2">
+        <div class="form-group mb-0">
+          <label>Section Timer (Minutes)</label>
+          <input type="number" class="form-control mixed-sec-timer" value="15" min="1">
+        </div>
+      </div>
+    `;
+
+    mixedContainer.appendChild(div);
+
+    div.querySelector('.btn-remove-card').addEventListener('click', () => {
+      div.remove();
+    });
+  }
+
+  if (addMixedMcqBtn) addMixedMcqBtn.addEventListener('click', () => createMixedSectionUI('mcq'));
+  if (addMixedCaseBtn) addMixedCaseBtn.addEventListener('click', () => createMixedSectionUI('case'));
+  if (addMixedCodingBtn) addMixedCodingBtn.addEventListener('click', () => createMixedSectionUI('coding'));
+
+  if (publishMixedBtn) {
+    publishMixedBtn.addEventListener('click', () => {
+      const title = document.getElementById('mixed-title-main').value.trim() || 'Mixed Assessment';
+      const sections = [];
+
+      mixedContainer.querySelectorAll('.mixed-section-card').forEach(card => {
+        const type = card.querySelector('.mixed-sec-type').value;
+        const timer = parseInt(card.querySelector('.mixed-sec-timer').value) || 15;
+        
+        if (type === 'mcq') {
+          const text = card.querySelector('.mixed-mcq-text').value;
+          const parsed = parseQuestionsFromText(text);
+          if(parsed.length > 0) sections.push({ type: 'mcq', timer, questions: parsed });
+        } else if (type === 'case') {
+          const content = card.querySelector('.mixed-case-text').value.trim();
+          const qsRaw = card.querySelector('.mixed-case-qs').value.trim();
+          const qs = qsRaw.split('||').map(s => {
+             const parts = s.split('|');
+             return { q: parts[0]?.trim() || '', ans: parts[1]?.trim() || '' };
+          }).filter(x => x.q);
+          if (content && qs.length > 0) sections.push({ type: 'case', timer, content, questions: qs });
+        } else if (type === 'coding') {
+          const desc = card.querySelector('.mixed-coding-desc').value.trim();
+          const input = card.querySelector('.mixed-coding-in').value.trim();
+          const output = card.querySelector('.mixed-coding-out').value.trim();
+          if (desc) sections.push({ type: 'coding', timer, questions: [{ title: 'Coding Problem', desc, probType: 'algo', input, output }] });
+        }
+      });
+
+      if (sections.length === 0) {
+        window.Toast.show('Add at least one valid section.', 'error');
+        return;
+      }
+
+      const settings = {
+        proctoring: document.getElementById('mixed-proctor')?.value || 'strict',
+        allowTab: document.getElementById('mixed-allow-tab')?.checked || false,
+        allowPaste: document.getElementById('mixed-allow-paste')?.checked || false,
+        publishResult: document.getElementById('mixed-publish-res')?.checked ?? true,
+        allowReview: document.getElementById('mixed-allow-review')?.checked || false,
+        randomize: document.getElementById('mixed-randomize')?.checked || false,
+        shuffleOptions: document.getElementById('mixed-shuffle-opts')?.checked || false,
+        duration: sections.reduce((acc, s) => acc + s.timer, 0),
+        startTime: document.getElementById('mixed-start-time')?.value || '',
+        endTime: document.getElementById('mixed-end-time')?.value || ''
+      };
+
+      const savedId = window.DB.saveAssessment({ title, type: 'mixed', sections, settings });
+      const savedA  = window.DB.getAssessments().find(a => a.id === savedId) || window.DB.getAssessments().at(-1);
+      window.Toast.show(`"${title}" published! Code: ${savedA.inviteCode}`);
+      showInviteBanner(savedA);
+      
+      document.getElementById('mixed-title-main').value = '';
+      mixedContainer.innerHTML = '';
+      mixedSectionCount = 0;
+    });
+  }
+
+  // =====================================================
+  // ANALYTICS DASHBOARD SECTION
+  // =====================================================
+  const navAnalytics = document.querySelector('.nav-item[data-target="analytics-section"]');
+  
+  function loadAnalytics() {
+    const submissions = window.DB ? window.DB.getSubmissions() : [];
+    
+    document.getElementById('analytics-total-submissions').textContent = submissions.length;
+    
+    let totalScore = 0;
+    let scoredCount = 0;
+    let flaggedCount = 0;
+
+    const topPerformers = [];
+
+    submissions.forEach(sub => {
+       if (sub.violations && sub.violations.length > 0) flaggedCount++;
+       
+       if (sub.score) {
+          let numScore = 0;
+          if (typeof sub.score === 'string' && sub.score.includes('/')) {
+             const parts = sub.score.split('/');
+             numScore = (parseFloat(parts[0]) / parseFloat(parts[1])) * 100;
+          } else if (typeof sub.score === 'string' && sub.score.includes('%')) {
+             numScore = parseFloat(sub.score);
+          } else {
+             numScore = parseFloat(sub.score);
+          }
+          if(!isNaN(numScore)) {
+             totalScore += numScore;
+             scoredCount++;
+             topPerformers.push({ name: sub.studentName || 'Student', exam: sub.assessmentTitle || 'Untitled', score: numScore, rawScore: sub.score });
+          }
+       }
+    });
+
+    document.getElementById('analytics-flagged').textContent = flaggedCount;
+    if (scoredCount > 0) {
+       document.getElementById('analytics-avg-score').textContent = (totalScore / scoredCount).toFixed(1) + '%';
+    } else {
+       document.getElementById('analytics-avg-score').textContent = '0%';
+    }
+
+    const tbody = document.getElementById('analytics-top-performers-body');
+    if (tbody) {
+       topPerformers.sort((a, b) => b.score - a.score);
+       const top5 = topPerformers.slice(0, 5);
+       if (top5.length > 0) {
+          tbody.innerHTML = top5.map(p => `
+             <tr>
+               <td>${p.name}</td>
+               <td>${p.exam}</td>
+               <td><strong style="color:var(--accent-primary)">${p.rawScore}</strong></td>
+             </tr>
+          `).join('');
+       } else {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">No scored submissions yet</td></tr>';
+       }
+    }
+  }
+
+  if (navAnalytics) {
+     navAnalytics.addEventListener('click', loadAnalytics);
+  }
+
+  // =====================================================
   // 6. SUBMISSION LOGS DASHBOARD
   // =====================================================
   const logsTableBody = document.getElementById('logs-table-body');
